@@ -26,7 +26,7 @@ add_executable ( Trillek ${CMAKE_CURRENT_SOURCE_DIR}/main/main.cpp )
 target_link_libraries ( Trillek 
 	core 
 	#	libSigmas 
-	# TR3200 
+	TR3200 
 	)
 
 
@@ -56,7 +56,7 @@ target_link_libraries ( Trillek
 #target_link_libraries ( TrillekCoreTests 
 #	core 
 #	#	libSigmas 
-#	#	TR3200 
+#	TR3200 
 #	${TEST_LIBRARIES} 
 #	)
 

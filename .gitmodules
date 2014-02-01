@@ -1,0 +1,4 @@
+[submodule "modules/vcomputer"]
+	path = modules/vcomputer
+	url = https://github.com/trillek-team/trillek-tr3200-vm.git
+	branch = master
