@@ -6,7 +6,7 @@ Requires CMake and one of the following compilers:
 * GCC 4.8 or newer;
 * Clang 3.3 or newer;
 * Visual Studio 2010 or newer;
-
+e
 Installing
 ===
 
@@ -44,9 +44,9 @@ Running
 
 __(Unix/Linux/OS X)__
 
-The binary `Sigma` is written to `build/bin`, `build/bin/debug`, or `build/debug/bin`
+The binary `**Trillek**` is written to `build/bin`, `build/bin/debug`, or `build/debug/bin`
 
-On OS X, you must launch Sigma from a shell in the build directory.  Launching Sigma through the Finder will not set the working directory correctly.
+On OS X, you must launch **Trillek** from a shell in the build directory.  Launching **Trillek** through the Finder will not set the working directory correctly.
 
 __Visual Studio__
 
@@ -55,7 +55,7 @@ Also you must go into the project's properties, and under the 'Debugging' catego
 
 __Xcode__
 
-On OS X, CMake can generate an Xcode project for Sigma.
+On OS X, CMake can generate an Xcode project for Trillek.
 
 ```sh
 mkdir build/
