@@ -71,7 +71,11 @@ FIND_PACKAGE(OpenAL REQUIRED)
 FIND_PACKAGE(Bullet REQUIRED)
 FIND_PACKAGE(SOIL REQUIRED)
 FIND_PACKAGE(GLM REQUIRED)
-# FIND_PACKAGE(CEF REQUIRED) # NOTE : This is linked by Sigma. should be here ???
+if(BUILD_LINK_CEF)
+	FIND_PACKAGE(CEF REQUIRED)
+else(BUILD_LINK_CEF)
+	add_definitions(-DNO_CEF)
+endif(BUILD_LINK_CEF)
 
 # Give these some dummy values and if the platform is LINUX or OSX they will be set accordingly.
 SET(X11_LIBRARIES "")
@@ -163,6 +167,7 @@ endforeach ()
 # add_subdirectory searches for a CMakeLists.txt file in the given
 # directory, so that's what we use to include each module's build script.
 foreach ( MODULE ${MODULES} )
+	MESSAGE(STATUS "Procesing module ${MODULE}")
 	add_subdirectory ( ${MODULE} )
 endforeach ()
 

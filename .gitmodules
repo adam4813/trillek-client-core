@@ -2,3 +2,7 @@
 	path = modules/vcomputer
 	url = https://github.com/trillek-team/trillek-tr3200-vm.git
 	branch = master
+[submodule "modules/sigma"]
+	path = modules/sigma
+	url = https://github.com/adam4813/Sigma.git
+	branch = develop

@@ -25,7 +25,7 @@ add_executable ( Trillek ${CMAKE_CURRENT_SOURCE_DIR}/main/main.cpp )
 # We need to link the executable to the modules that are used.
 target_link_libraries ( Trillek 
 	core 
-	#	libSigmas 
+	libSigmas 
 	TR3200 
 	)
 
@@ -55,7 +55,7 @@ target_link_libraries ( Trillek
 # exceptions where mocking is not an option.
 #target_link_libraries ( TrillekCoreTests 
 #	core 
-#	#	libSigmas 
+#	libSigmas 
 #	TR3200 
 #	${TEST_LIBRARIES} 
 #	)
