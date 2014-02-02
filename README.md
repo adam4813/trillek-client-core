@@ -34,6 +34,11 @@ You must execute :
     git submodule update
     
 This will grab latest Sigma and Virtual Computer as git submodules
+Also, temporary, you need to replace line 21 of /modules/sigma/CMakeLists.txt by :
+
+    SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/modules")
+    
+If not, cmake will give an error when process Sigma.
 
 ## Building ##
 
