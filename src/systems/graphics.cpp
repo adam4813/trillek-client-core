@@ -585,17 +585,14 @@ void RenderSystem::UpdateModelMatrices() {
     for (auto it = transforms.cbegin(); it != transforms.cend(); ++it) {
         const auto id = it->first;
         const auto transform = it->second;
-        if (this->camera) {
-            if (id == this->camera_id) {
-                this->vp_center.view_matrix = this->camera->GetViewMatrix();
-//                this->model_matrices[id] = this->camera->GetViewMatrix();
-//                continue;
-            }
-        }
         glm::mat4 model_matrix = glm::translate(transform->GetTranslation()) *
             glm::mat4_cast(transform->GetOrientation()) *
             glm::scale(transform->GetScale());
         this->model_matrices[id] = model_matrix;
+    }
+    // Update the view matrix if necessary
+    if (transforms.count(this->GetActiveCameraID())) {
+        this->vp_center.view_matrix = this->camera->GetViewMatrix();
     }
 }
 

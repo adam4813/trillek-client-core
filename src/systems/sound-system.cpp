@@ -1,4 +1,4 @@
-#include "systems/sound-system.hpp"
+#include "trillek-game.hpp"
 #include "systems/transform-system.hpp"
 
 namespace trillek {
@@ -104,8 +104,9 @@ void System::HandleEvents(const frame_tp& timepoint) {
         // wait for the list to be published
         auto transformmap = transformfut.get();
         // assume this is the camera entity id
-        if(transformmap->count(0)) {
-            auto data = transformmap->at(0);
+        const auto it = transformmap->find(TrillekGame::GetGraphicSystem().GetActiveCameraID());
+        if (it != transformmap->cend()) {
+            auto data = it->second;
             const glm::vec3& position = data->GetTranslation();
             alListener3f(AL_POSITION, position.x, position.y, position.z);
             const glm::vec3& up = data->GetOrientation() * UP_VECTOR;
