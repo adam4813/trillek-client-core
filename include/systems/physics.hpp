@@ -108,20 +108,20 @@ public:
     /** \brief Return a future of the forces
      *
      * \param timepoint const frame_tp& the current frame
-     * \return std::shared_future<std::shared_ptr<std::map<id_t,btVector3>>> the future
+     * \return AsyncDataFuture<std::map<id_t,btVector3>> the future
      *
      */
-    std::shared_future<std::shared_ptr<const std::map<id_t,btVector3>>> GetAsyncForces(const frame_tp& timepoint) const {
+    AsyncDataFuture<std::map<id_t,btVector3>> GetAsyncForces(const frame_tp& timepoint) const {
         return async_forces.GetFuture(timepoint);
     }
 
     /** \brief Return a future of the torques
      *
      * \param timepoint const frame_tp& the current frame
-     * \return std::shared_future<std::shared_ptr<std::map<id_t,btVector3>>> the future
+     * \return AsyncDataFuture<std::map<id_t,btVector3>> the future
      *
      */
-    std::shared_future<std::shared_ptr<const std::map<id_t,btVector3>>> GetAsyncTorques(const frame_tp& timepoint) const {
+    AsyncDataFuture<std::map<id_t,btVector3>> GetAsyncTorques(const frame_tp& timepoint) const {
         return async_torques.GetFuture(timepoint);
     }
 

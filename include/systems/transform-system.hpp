@@ -70,6 +70,11 @@ public:
     */
     static void RemoveTransform(const unsigned int entity_id);
 
+    /** \brief Return the async provider of updated transforms
+     *
+     * \return AsyncData<std::map<id_t,const Transform*>>&
+     *
+     */
     static AsyncData<std::map<id_t,const Transform*>>& GetAsyncUpdatedTransforms() {
         return instance->async_updated_transforms;
     }

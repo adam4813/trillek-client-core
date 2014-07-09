@@ -8,24 +8,49 @@
 namespace trillek {
 
 template<class T>
+class AsyncDataFuture {
+public:
+    AsyncDataFuture<T>& operator=(std::shared_future<const T>&& rhs) {
+        current_future = std::move(rhs);
+        return *this;
+    }
+
+    /** \brief Get a reference of the data associated to the future
+     *
+     * The reference is valid as long as the present instance is kept.
+     *
+     * \return const T& the data
+     *
+     */
+    const T& GetData() {
+        return current_future.get();
+    }
+
+    bool valid() const {
+        return current_future.valid();
+    }
+private:
+    std::shared_future<const T> current_future;
+};
+
+
+template<class T>
 class AsyncData {
 public:
     AsyncData() {
         Unpublish(frame_tp{});
     };
 
-    /** \brief Request a future for the data
+    /** \brief Request a future for the data of this frame
      *
      * The future returned is not valid if the frame requested is behind
      * the current frame for the publisher
      *
-     * Callers must catch exceptions thrown through the future.
-     *
      * \param frame_requested const frame_tp& the current frame of the caller
-     * \return std::shared_future<<std::shared_ptr<const T>>> the future
+     * \return AsyncDataFuture<T> the future
      *
      */
-    std::shared_future<std::shared_ptr<const T>> GetFuture(const frame_tp& frame_requested) const {
+    AsyncDataFuture<T> GetFuture(const frame_tp& frame_requested) const {
         std::unique_lock<std::mutex> locker(m_current);
         if (frame_requested < current_frame) {
             // the call is too late
@@ -43,10 +68,10 @@ public:
      *
      * The futures are made ready
      *
-     * \param data const T the data to broadcast
+     * \param data const T& the data to broadcast
      *
      */
-    template<class U=std::shared_ptr<const T>>
+    template<class U=const T>
     void Publish(U&& data) {
         // unblock threads waiting the data
         current_promise.set_value(std::forward<U>(data));
@@ -61,9 +86,9 @@ public:
     void Unpublish(frame_tp frame) {
         std::unique_lock<std::mutex> locker(m_current);
         // delete the future
-        current_future = std::shared_future<std::shared_ptr<const T>>();
+        current_future = std::shared_future<const T>();
         // set the promise
-        current_promise = std::promise<std::shared_ptr<const T>>();
+        current_promise = std::promise<const T>();
         current_future = current_promise.get_future().share();
         // update the frame timepoint
         current_frame = std::move(frame);
@@ -71,8 +96,8 @@ public:
     }
 
 private:
-    std::promise<std::shared_ptr<const T>> current_promise;
-    std::shared_future<std::shared_ptr<const T>> current_future;
+    std::promise<const T> current_promise;
+    AsyncDataFuture<T> current_future;
     frame_tp current_frame;
     mutable std::mutex m_current;
     mutable std::condition_variable ahead_request;

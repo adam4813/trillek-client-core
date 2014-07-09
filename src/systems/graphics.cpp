@@ -575,13 +575,7 @@ void RenderSystem::RenderLightingPass(const glm::mat4x4 &view_matrix, const floa
 }
 
 void RenderSystem::UpdateModelMatrices() {
-    std::map<unsigned int,const Transform*> transforms;
-    try {
-        transforms = *updated_transforms.get();
-    }
-    catch(std::future_error& e) {
-        std::cerr << "Render system missed a frame" << std::endl;
-    }
+    auto& transforms = updated_transforms.GetData();
     for (auto it = transforms.cbegin(); it != transforms.cend(); ++it) {
         const auto id = it->first;
         const auto transform = it->second;

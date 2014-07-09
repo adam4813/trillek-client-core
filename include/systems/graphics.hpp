@@ -20,6 +20,7 @@
 #include "graphics/material.hpp"
 #include "graphics/render-layer.hpp"
 #include "graphics/texture.hpp"
+#include "systems/async-data.hpp"
 #include <map>
 
 namespace trillek {
@@ -287,7 +288,7 @@ private:
     std::map<unsigned int, std::map<std::string, std::shared_ptr<GraphicsBase>>> graphics_instances;
     std::map<unsigned int, glm::mat4> model_matrices;
     std::list<MaterialGroup> material_groups;
-    std::shared_future<std::shared_ptr<const std::map<unsigned int,const Transform*>>> updated_transforms;
+    AsyncDataFuture<std::map<unsigned int,const Transform*>> updated_transforms;
 };
 
 /**

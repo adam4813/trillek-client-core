@@ -43,9 +43,9 @@ void PhysicsSystem::HandleEvents(const frame_tp& timepoint) {
     // Remove access to torques
     async_torques.Unpublish(timepoint);
     // publish the forces of the current frame immediately without making a copy of the list
-    async_forces.Publish(std::make_shared<const std::map<id_t,btVector3>>(this->forces.Poll()));
+    async_forces.Publish(this->forces.Poll());
     // publish the torques of the current frame
-    async_torques.Publish(std::make_shared<const std::map<id_t,btVector3>>(this->torques.Poll()));
+    async_torques.Publish(this->torques.Poll());
 
     static frame_tp last_tp;
     this->delta = timepoint - last_tp;
@@ -54,13 +54,15 @@ void PhysicsSystem::HandleEvents(const frame_tp& timepoint) {
     // Set the rigid bodies linear velocity. Must be done each frame otherwise,
     // other forces will stop the linear velocity.
     // We use the published list
-    for (auto& force : *async_forces.GetFuture(timepoint).get()) {
+    auto& forces_list = async_forces.GetFuture(timepoint).GetData();
+    for (auto& force : forces_list) {
         auto body = this->bodies[force.first]->GetRigidBody();
         body->setLinearVelocity(force.second + body->getGravity());
     }
     // Set the rigid bodies angular velocity. Must be done each frame otherwise,
     // other forces will stop the angular velocity.
-    for (auto& torque : *async_torques.GetFuture(timepoint).get()) {
+    auto& torques_list = async_torques.GetFuture(timepoint).GetData();
+    for (auto& torque : torques_list) {
         auto body = this->bodies[torque.first]->GetRigidBody();
         body->setAngularVelocity(torque.second);
     }
@@ -72,8 +74,7 @@ void PhysicsSystem::HandleEvents(const frame_tp& timepoint) {
         shape.second->UpdateTransform();
     }
     // Publish the new updated transforms map
-    auto ntm = std::make_shared<std::map<id_t,const Transform*>>(TransformMap::GetUpdatedTransforms().Poll());
-    TransformMap::GetAsyncUpdatedTransforms().Publish(std::move(ntm));
+    TransformMap::GetAsyncUpdatedTransforms().Publish(TransformMap::GetUpdatedTransforms().Poll());
 }
 
 void PhysicsSystem::Terminate() {

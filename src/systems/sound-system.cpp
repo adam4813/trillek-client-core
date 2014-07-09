@@ -102,10 +102,9 @@ void System::HandleEvents(const frame_tp& timepoint) {
     auto transformfut = TransformMap::GetAsyncUpdatedTransforms().GetFuture(timepoint);
     if (transformfut.valid()) {
         // wait for the list to be published
-        auto transformmap = transformfut.get();
-        // assume this is the camera entity id
-        const auto it = transformmap->find(TrillekGame::GetGraphicSystem().GetActiveCameraID());
-        if (it != transformmap->cend()) {
+        auto& transformmap = transformfut.GetData();
+        const auto it = transformmap.find(TrillekGame::GetGraphicSystem().GetActiveCameraID());
+        if (it != transformmap.cend()) {
             auto data = it->second;
             const glm::vec3& position = data->GetTranslation();
             alListener3f(AL_POSITION, position.x, position.y, position.z);
@@ -116,7 +115,9 @@ void System::HandleEvents(const frame_tp& timepoint) {
         }
     }
     else {
-        std::cerr << "Sound system missed the updated transform map publication" << std::endl;
+        if (! TrillekGame::GetTerminateFlag()) {
+            std::cerr << "Sound system missed the updated transform map publication" << std::endl;
+        }
     }
 }
 
