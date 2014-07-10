@@ -20,7 +20,6 @@
 #include "graphics/material.hpp"
 #include "graphics/render-layer.hpp"
 #include "graphics/texture.hpp"
-#include "systems/async-data.hpp"
 #include <map>
 
 namespace trillek {
@@ -250,7 +249,7 @@ private:
         }
     }
 
-    void UpdateModelMatrices();
+    void UpdateModelMatrices(const frame_tp& timepoint);
 
     int gl_version[3];
     bool frame_drop;
@@ -288,7 +287,6 @@ private:
     std::map<unsigned int, std::map<std::string, std::shared_ptr<GraphicsBase>>> graphics_instances;
     std::map<unsigned int, glm::mat4> model_matrices;
     std::list<MaterialGroup> material_groups;
-    AsyncDataFuture<std::map<unsigned int,const Transform*>> updated_transforms;
 };
 
 /**

@@ -72,7 +72,7 @@ public:
 
 class System : public util::Parser, public SystemBase {
 private:
-    System() : Parser("sounds") { }
+    System() : Parser("sounds"), last_received_frame(frame_unit(1000)) { }
     System(const System& right) : Parser("sounds")  {
         instance = right.instance;
     }
@@ -145,6 +145,8 @@ private:
         bool loop, spatial;
         double volume;
     };
+
+    frame_tp last_received_frame;
 
     std::unordered_map<std::string, std::shared_ptr<sound_info>> sounds;
 }; // end of class System

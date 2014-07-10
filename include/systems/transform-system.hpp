@@ -75,7 +75,7 @@ public:
      * \return AsyncData<std::map<id_t,const Transform*>>&
      *
      */
-    static AsyncData<std::map<id_t,const Transform*>>& GetAsyncUpdatedTransforms() {
+    static AsyncFrameData<std::map<id_t,const Transform*>>& GetAsyncUpdatedTransforms() {
         return instance->async_updated_transforms;
     }
 
@@ -96,7 +96,7 @@ private:
     std::map<unsigned int, std::shared_ptr<Transform>> transforms;
 
     AtomicMap<id_t,const Transform*> updated_transforms;
-    AsyncData<std::map<id_t,const Transform*>> async_updated_transforms;
+    AsyncFrameData<std::map<id_t,const Transform*>> async_updated_transforms;
 };
 
 } // End of trillek

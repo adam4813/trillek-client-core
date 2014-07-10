@@ -111,8 +111,8 @@ public:
      * \return AsyncDataFuture<std::map<id_t,btVector3>> the future
      *
      */
-    AsyncDataFuture<std::map<id_t,btVector3>> GetAsyncForces(const frame_tp& timepoint) const {
-        return async_forces.GetFuture(timepoint);
+    AsyncFrameData<std::map<id_t,btVector3>>::return_type GetAsyncForces(const frame_tp& timepoint, const frame_tp& last_received) const {
+        return async_forces.GetFramesData(timepoint, last_received);
     }
 
     /** \brief Return a future of the torques
@@ -121,8 +121,8 @@ public:
      * \return AsyncDataFuture<std::map<id_t,btVector3>> the future
      *
      */
-    AsyncDataFuture<std::map<id_t,btVector3>> GetAsyncTorques(const frame_tp& timepoint) const {
-        return async_torques.GetFuture(timepoint);
+    AsyncFrameData<std::map<id_t,btVector3>>::return_type GetAsyncTorques(const frame_tp& timepoint, const frame_tp& last_received) const {
+        return async_torques.GetFramesData(timepoint, last_received);
     }
 
 private:
@@ -136,8 +136,8 @@ private:
 
     AtomicMap<unsigned int, btVector3> forces;
     AtomicMap<unsigned int, btVector3> torques;
-    AsyncData<std::map<id_t,btVector3>> async_forces;
-    AsyncData<std::map<id_t,btVector3>> async_torques;
+    AsyncFrameData<std::map<id_t,btVector3>> async_forces;
+    AsyncFrameData<std::map<id_t,btVector3>> async_torques;
 
     btCollisionShape* groundShape;
     btDefaultMotionState* groundMotionState;

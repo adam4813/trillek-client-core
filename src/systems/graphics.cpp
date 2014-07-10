@@ -574,18 +574,21 @@ void RenderSystem::RenderLightingPass(const glm::mat4x4 &view_matrix, const floa
     glBindVertexArray(0); CheckGLError();
 }
 
-void RenderSystem::UpdateModelMatrices() {
-    auto& transforms = updated_transforms.GetData();
-    for (auto it = transforms.cbegin(); it != transforms.cend(); ++it) {
-        const auto id = it->first;
-        const auto transform = it->second;
+inline void RenderSystem::UpdateModelMatrices(const frame_tp& timepoint) {
+    // since the data is published by the same thread, get the last published data
+    auto& transform_map = TransformMap::GetAsyncUpdatedTransforms().GetLastFrameData();
+    // for each frame
+    for (const auto& transform_pair : transform_map) {
+        // for each modified transform in the frame
+        const auto id = transform_pair.first;
+        const auto& transform = transform_pair.second;
         glm::mat4 model_matrix = glm::translate(transform->GetTranslation()) *
             glm::mat4_cast(transform->GetOrientation()) *
             glm::scale(transform->GetScale());
         this->model_matrices[id] = model_matrix;
     }
     // Update the view matrix if necessary
-    if (transforms.count(this->GetActiveCameraID())) {
+    if (transform_map.count(this->GetActiveCameraID())) {
         this->vp_center.view_matrix = this->camera->GetViewMatrix();
     }
 }
@@ -843,13 +846,7 @@ void RenderSystem::HandleEvents(const frame_tp& timepoint) {
             ren.second->GetAnimation()->UpdateAnimation(delta.count() * 1E-9d);
         }
     }
-    updated_transforms = TransformMap::GetAsyncUpdatedTransforms().GetFuture(timepoint);
-    if(updated_transforms.valid()) {
-        UpdateModelMatrices();
-    }
-    else {
-        std::cerr << "RenderSystem::HandleEvents() missed the publication of updated transforms" << std::endl;
-    }
+    UpdateModelMatrices(timepoint);
 };
 
 void RenderSystem::Terminate() {

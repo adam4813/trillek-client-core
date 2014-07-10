@@ -36,16 +36,10 @@ void PhysicsSystem::AddComponent(const unsigned int entity_id, std::shared_ptr<C
 }
 
 void PhysicsSystem::HandleEvents(const frame_tp& timepoint) {
-    // Remove access to old updated transforms
-    TransformMap::GetAsyncUpdatedTransforms().Unpublish(timepoint);
-    // Remove access to forces
-    async_forces.Unpublish(timepoint);
-    // Remove access to torques
-    async_torques.Unpublish(timepoint);
     // publish the forces of the current frame immediately without making a copy of the list
-    async_forces.Publish(this->forces.Poll());
+    async_forces.Publish(this->forces.Poll(), timepoint);
     // publish the torques of the current frame
-    async_torques.Publish(this->torques.Poll());
+    async_torques.Publish(this->torques.Poll(), timepoint);
 
     static frame_tp last_tp;
     this->delta = timepoint - last_tp;
@@ -54,15 +48,16 @@ void PhysicsSystem::HandleEvents(const frame_tp& timepoint) {
     // Set the rigid bodies linear velocity. Must be done each frame otherwise,
     // other forces will stop the linear velocity.
     // We use the published list
-    auto& forces_list = async_forces.GetFuture(timepoint).GetData();
-    for (auto& force : forces_list) {
+    const auto& forces_map = async_forces.GetLastFrameData();
+    for (const auto& force : forces_map) {
         auto body = this->bodies[force.first]->GetRigidBody();
         body->setLinearVelocity(force.second + body->getGravity());
     }
     // Set the rigid bodies angular velocity. Must be done each frame otherwise,
     // other forces will stop the angular velocity.
-    auto& torques_list = async_torques.GetFuture(timepoint).GetData();
-    for (auto& torque : torques_list) {
+    // we use the published list
+    const auto& torques_map = async_torques.GetLastFrameData();
+    for (const auto& torque : torques_map) {
         auto body = this->bodies[torque.first]->GetRigidBody();
         body->setAngularVelocity(torque.second);
     }
@@ -74,7 +69,7 @@ void PhysicsSystem::HandleEvents(const frame_tp& timepoint) {
         shape.second->UpdateTransform();
     }
     // Publish the new updated transforms map
-    TransformMap::GetAsyncUpdatedTransforms().Publish(TransformMap::GetUpdatedTransforms().Poll());
+    TransformMap::GetAsyncUpdatedTransforms().Publish(TransformMap::GetUpdatedTransforms().Poll(), timepoint);
 }
 
 void PhysicsSystem::Terminate() {

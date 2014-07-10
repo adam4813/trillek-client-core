@@ -99,24 +99,27 @@ std::shared_ptr<Sound> System::GetSound(const std::string& id) {
 }
 
 void System::HandleEvents(const frame_tp& timepoint) {
-    auto transformfut = TransformMap::GetAsyncUpdatedTransforms().GetFuture(timepoint);
-    if (transformfut.valid()) {
-        // wait for the list to be published
-        auto& transformmap = transformfut.GetData();
-        const auto it = transformmap.find(TrillekGame::GetGraphicSystem().GetActiveCameraID());
-        if (it != transformmap.cend()) {
-            auto data = it->second;
-            const glm::vec3& position = data->GetTranslation();
-            alListener3f(AL_POSITION, position.x, position.y, position.z);
-            const glm::vec3& up = data->GetOrientation() * UP_VECTOR;
-            const glm::vec3& at = data->GetOrientation() * FORWARD_VECTOR;
-            ALfloat orientation[] = {at.x, at.y, at.z, up.x, up.y, up.z};
-            alListenerfv(AL_ORIENTATION, orientation);
+    auto transform_frame_it = TransformMap::GetAsyncUpdatedTransforms().GetFramesData(timepoint, last_received_frame);
+    auto& transform_itb = transform_frame_it.first;
+    auto& transform_ite = transform_frame_it.second;
+    auto distance = std::distance(transform_itb, transform_ite);
+    if (distance) {
+        for(; transform_itb != transform_ite; ++transform_itb) {
+            auto& transformmap = transform_itb->second;
+            const auto it = transformmap.find(TrillekGame::GetGraphicSystem().GetActiveCameraID());
+            if (it != transformmap.cend()) {
+                auto& data = it->second;
+                const glm::vec3& position = data->GetTranslation();
+                alListener3f(AL_POSITION, position.x, position.y, position.z);
+                const glm::vec3& up = data->GetOrientation() * UP_VECTOR;
+                const glm::vec3& at = data->GetOrientation() * FORWARD_VECTOR;
+                ALfloat orientation[] = {at.x, at.y, at.z, up.x, up.y, up.z};
+                alListenerfv(AL_ORIENTATION, orientation);
+            }
         }
-    }
-    else {
-        if (! TrillekGame::GetTerminateFlag()) {
-            std::cerr << "Sound system missed the updated transform map publication" << std::endl;
+        last_received_frame = (--transform_itb)->first;
+        if (distance > 1) {
+            std::cerr << "Sound system was " << distance - 1 << " frame(s) late" << std::endl;
         }
     }
 }

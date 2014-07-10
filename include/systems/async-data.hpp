@@ -1,67 +1,53 @@
 #ifndef ASYNCDATA_HPP_INCLUDED
 #define ASYNCDATA_HPP_INCLUDED
 
-#include <future>
 #include <mutex>
+#include <iterator>
 #include "trillek-scheduler.hpp"
 
 namespace trillek {
 
-template<class T>
-class AsyncDataFuture {
+template<class T,int HistorySize = 30>
+class AsyncFrameData {
+    typedef std::map<frame_tp,T> content_map;
 public:
-    AsyncDataFuture<T>& operator=(std::shared_future<const T>&& rhs) {
-        current_future = std::move(rhs);
-        return *this;
-    }
 
-    /** \brief Get a reference of the data associated to the future
-     *
-     * The reference is valid as long as the present instance is kept.
-     *
-     * \return const T& the data
-     *
-     */
-    const T& GetData() {
-        return current_future.get();
-    }
+    typedef typename content_map::const_iterator iterator_type;
+    typedef std::pair<iterator_type,iterator_type> return_type;
 
-    bool valid() const {
-        return current_future.valid();
-    }
-private:
-    std::shared_future<const T> current_future;
-};
-
-
-template<class T>
-class AsyncData {
-public:
-    AsyncData() {
-        Unpublish(frame_tp{});
+    AsyncFrameData() {
+        for (auto i = 0; i < HistorySize; ++i) {
+            datas.emplace_hint(datas.end(), std::make_pair<frame_tp,T>(frame_tp(frame_unit(i)), T()));
+        }
     };
 
-    /** \brief Request a future for the data of this frame
+    /** \brief Return the frames between last_received and frame_requested
      *
-     * The future returned is not valid if the frame requested is behind
-     * the current frame for the publisher
+     * last_received is not included.
      *
-     * \param frame_requested const frame_tp& the current frame of the caller
-     * \return AsyncDataFuture<T> the future
+     * Actually return bound iterators on the map of data
+     *
+     * Blocks if the call is too early, and returns no data after 0.5s
+     *
+     * \param frame_requested const frame_tp& the "now" of the caller
+     * \param last_received const frame_tp& the last frame received by the caller
+     * \return return_type 2 iterators on the map of data for each frame
      *
      */
-    AsyncDataFuture<T> GetFuture(const frame_tp& frame_requested) const {
+    return_type GetFramesData(const frame_tp& frame_requested, const frame_tp& last_received) const {
         std::unique_lock<std::mutex> locker(m_current);
-        if (frame_requested < current_frame) {
-            // the call is too late
-            return {};
+        auto requested_index = datas.upper_bound(last_received);
+        if (requested_index == datas.cend() || frame_requested > current_frame) {
+            // we block until the frame time or after 500 ms
+            if (! ahead_request.wait_for(locker, std::chrono::milliseconds(500), [&](){ return frame_requested <= current_frame; })) {
+                // 500 ms have passed, let return a invalid future
+                return { datas.cend(), datas.cend() };
+            }
         }
-        // we block until the frame time or after 500 ms
-        if (! ahead_request.wait_for(locker, std::chrono::milliseconds(500), [&](){ return frame_requested <= current_frame; })) {
-            // 500 ms have passed, let return a invalid future
-            return {};
-        }
-        return current_future;
+        auto d = (current_frame - frame_requested);
+        auto d2 = frame_requested - last_received;
+        requested_index = datas.upper_bound(last_received);
+        return { std::move(requested_index), datas.cend() };
     };
 
     /** \brief Make the data available to all threads
@@ -72,32 +58,26 @@ public:
      *
      */
     template<class U=const T>
-    void Publish(U&& data) {
-        // unblock threads waiting the data
-        current_promise.set_value(std::forward<U>(data));
+    void Publish(U&& data, frame_tp frame) {
+        std::unique_lock<std::mutex> locker(m_current);
+        current_frame = std::move(frame);
+        datas[current_frame] = std::forward<U>(data);
+        datas.erase(datas.begin());
+        ahead_request.notify_all();
     };
 
-    /** \brief Remove access to current data
+    /** \brief Get the data of the last frame available
      *
-     * This also declares what frame we will honour next time
+     * \return const T& the data
      *
-     * \param frame const frame_tp the current frame
      */
-    void Unpublish(frame_tp frame) {
+    const T& GetLastFrameData() const {
         std::unique_lock<std::mutex> locker(m_current);
-        // delete the future
-        current_future = std::shared_future<const T>();
-        // set the promise
-        current_promise = std::promise<const T>();
-        current_future = current_promise.get_future().share();
-        // update the frame timepoint
-        current_frame = std::move(frame);
-        ahead_request.notify_all();
+        return datas.at(current_frame);
     }
 
 private:
-    std::promise<const T> current_promise;
-    AsyncDataFuture<T> current_future;
+    content_map datas;
     frame_tp current_frame;
     mutable std::mutex m_current;
     mutable std::condition_variable ahead_request;
