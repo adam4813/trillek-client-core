@@ -33,7 +33,6 @@ bool OS::InitializeWindow(const int width, const int height, const std::string t
     }
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, glMajor);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, glMinor);
 

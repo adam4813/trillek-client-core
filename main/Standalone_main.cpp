@@ -18,7 +18,7 @@ int main(int argCount, char **argValues) {
 #if __APPLE__
     os.InitializeWindow(800, 600, "Trillek Client Core", 3, 2);
 #else
-    os.InitializeWindow(800, 600, "Trillek Client Core", 3, 0);
+    os.InitializeWindow(800, 600, "Trillek Client Core", 1, 0);
 #endif
     glGetError(); // clear errors
 
@@ -30,7 +30,7 @@ int main(int argCount, char **argValues) {
     trillek::TrillekGame::GetPhysicsSystem().Start();
 
     trillek::util::JSONPasrser jparser;
-    
+
     if (!jparser.Parse("assets/tests/sample.json")) {
         std::cerr << "Error loading JSON configuration file." << std::endl;
     }
@@ -74,4 +74,4 @@ int main(int argCount, char **argValues) {
     os.MakeCurrent();
     os.Terminate();
     return 0;
-} 
+}
