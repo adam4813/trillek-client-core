@@ -48,7 +48,7 @@ void PhysicsSystem::HandleEvents(const frame_tp& timepoint) {
     // Set the rigid bodies linear velocity. Must be done each frame otherwise,
     // other forces will stop the linear velocity.
     // We use the published list
-    const auto& forces_map = async_forces.GetLastFrameData();
+    const auto& forces_map = async_forces.GetLastData();
     for (const auto& force : forces_map) {
         auto body = this->bodies[force.first]->GetRigidBody();
         body->setLinearVelocity(force.second + body->getGravity());
@@ -56,7 +56,7 @@ void PhysicsSystem::HandleEvents(const frame_tp& timepoint) {
     // Set the rigid bodies angular velocity. Must be done each frame otherwise,
     // other forces will stop the angular velocity.
     // we use the published list
-    const auto& torques_map = async_torques.GetLastFrameData();
+    const auto& torques_map = async_torques.GetLastData();
     for (const auto& torque : torques_map) {
         auto body = this->bodies[torque.first]->GetRigidBody();
         body->setAngularVelocity(torque.second);

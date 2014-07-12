@@ -105,24 +105,30 @@ public:
      */
     void SetGravity(const unsigned int entity_id, const Force* f = nullptr);
 
-    /** \brief Return a future of the forces
+    /** \brief Return a map of history of the forces
+     *
+     * last_received frame will be updated.
      *
      * \param timepoint const frame_tp& the current frame
-     * \return AsyncDataFuture<std::map<id_t,btVector3>> the future
+     * \param last_received frame_tp& the last received frame
+     * \return HistoryMap<std::map<id_t,btVector3>> the history data
      *
      */
-    AsyncFrameData<std::map<id_t,btVector3>>::return_type GetAsyncForces(const frame_tp& timepoint, const frame_tp& last_received) const {
-        return async_forces.GetFramesData(timepoint, last_received);
+    HistoryMap<std::map<id_t,btVector3>> GetAsyncForces(const frame_tp& timepoint, frame_tp& last_received) const {
+        return async_forces.GetHistoryData(timepoint, last_received);
     }
 
-    /** \brief Return a future of the torques
+    /** \brief Return a map of history of the torques
+     *
+     * last_received frame will be updated.
      *
      * \param timepoint const frame_tp& the current frame
-     * \return AsyncDataFuture<std::map<id_t,btVector3>> the future
+     * \param last_received frame_tp& the last received frame
+     * \return HistoryMap<std::map<id_t,btVector3>> the history data
      *
      */
-    AsyncFrameData<std::map<id_t,btVector3>>::return_type GetAsyncTorques(const frame_tp& timepoint, const frame_tp& last_received) const {
-        return async_torques.GetFramesData(timepoint, last_received);
+    HistoryMap<std::map<id_t,btVector3>> GetAsyncTorques(const frame_tp& timepoint, frame_tp& last_received) const {
+        return async_torques.GetHistoryData(timepoint, last_received);
     }
 
 private:

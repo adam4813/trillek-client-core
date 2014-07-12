@@ -680,7 +680,7 @@ void RenderSystem::RenderLightingPass(const glm::mat4x4 &view_matrix, const floa
 
 inline void RenderSystem::UpdateModelMatrices(const frame_tp& timepoint) {
     // since the data is published by the same thread, get the last published data
-    auto& transform_map = TransformMap::GetAsyncUpdatedTransforms().GetLastFrameData();
+    auto& transform_map = TransformMap::GetAsyncUpdatedTransforms().GetLastData();
     // for each frame
     for (const auto& transform_pair : transform_map) {
         // for each modified transform in the frame
