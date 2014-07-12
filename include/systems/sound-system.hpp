@@ -72,7 +72,7 @@ public:
 
 class System : public util::Parser, public SystemBase {
 private:
-    System() : Parser("sounds"), last_received_frame(frame_unit(1000)) { }
+    System() : Parser("sounds"), last_received_frame(frame_unit(0)) { }
     System(const System& right) : Parser("sounds")  {
         instance = right.instance;
     }
