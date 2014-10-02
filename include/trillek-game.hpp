@@ -58,7 +58,7 @@ public:
 
     /** \brief Return the meta engine system instance
     *
-    * This sytem wraps together some function calls of graphic and physics systems
+    * This system wraps together some function calls of graphic and physics systems
     *
     * \return MetaEngineSystem& the instance
     */
