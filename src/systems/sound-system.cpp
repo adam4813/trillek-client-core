@@ -1,5 +1,5 @@
 #include "systems/sound-system.hpp"
-#include "systems/transform-system.hpp"
+#include "systems/transform-update-system.hpp"
 #include "logging.hpp"
 
 namespace trillek {
@@ -100,7 +100,7 @@ std::shared_ptr<Sound> System::GetSound(const std::string& id) {
 }
 
 void System::HandleEvents(const frame_tp& timepoint) {
-    auto transformfut = TransformMap::GetAsyncUpdatedTransforms().GetFuture(timepoint);
+    auto transformfut = TransformUpdateSystem::GetAsyncUpdatedMap().GetFuture(timepoint);
     if (transformfut.valid()) {
         // wait for the list to be published
         auto transformmap = transformfut.get();

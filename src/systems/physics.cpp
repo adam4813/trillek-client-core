@@ -1,6 +1,6 @@
 #include "systems/physics.hpp"
 #include "physics/collidable.hpp"
-#include "systems/transform-system.hpp"
+#include "systems/transform-update-system.hpp"
 #include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
 #include <bullet/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 
@@ -42,7 +42,7 @@ void PhysicsSystem::HandleEvents(const frame_tp& timepoint) {
     }
 
     // Remove access to old updated transforms
-    TransformMap::GetAsyncUpdatedTransforms().Unpublish(timepoint);
+    TransformUpdateSystem::GetAsyncUpdatedMap().Unpublish(timepoint);
     // Remove access to forces
     this->async_forces.Unpublish(timepoint);
     // Remove access to torques
@@ -77,8 +77,8 @@ void PhysicsSystem::HandleEvents(const frame_tp& timepoint) {
         shape.second->UpdateTransform();
     }
     // Publish the new updated transforms map
-    auto ntm = std::make_shared<std::map<id_t,const Transform*>>(TransformMap::GetUpdatedTransforms().Poll());
-    TransformMap::GetAsyncUpdatedTransforms().Publish(std::move(ntm));
+    auto ntm = std::make_shared<std::map<id_t,const Transform*>>(TransformUpdateSystem::GetUpdatedMap().Poll());
+    TransformUpdateSystem::GetAsyncUpdatedMap().Publish(std::move(ntm));
 }
 
 void PhysicsSystem::Terminate() {

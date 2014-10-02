@@ -61,7 +61,7 @@ public:
     *
     * \return const std::string& The reference to the internal buffer.
     */
-    const std::string& GetText() {
+    const std::string& GetText() const {
         return this->file_buffer;
     }
 private:

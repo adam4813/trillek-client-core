@@ -1,5 +1,5 @@
-#ifndef STATE_SYSTEM_HPP_INCLUDED
-#define STATE_SYSTEM_HPP_INCLUDED
+#ifndef ECS_STATE_SYSTEM_HPP_INCLUDED
+#define ECS_STATE_SYSTEM_HPP_INCLUDED
 
 #include <map>
 #include <memory>

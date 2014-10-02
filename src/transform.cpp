@@ -1,5 +1,5 @@
 #include "transform.hpp"
-#include "systems/transform-system.hpp"
+#include "systems/transform-update-system.hpp"
 
 namespace trillek {
 
@@ -72,7 +72,7 @@ glm::vec3 Transform::GetScale() const {
 }
 
 void Transform::MarkAsModified() {
-    TransformMap::GetUpdatedTransforms().Insert(this->entity_id, this);
+    TransformUpdateSystem::GetUpdatedMap().Insert(this->entity_id, this);
 };
 
 } // End of trillek

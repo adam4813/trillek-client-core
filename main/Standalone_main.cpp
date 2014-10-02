@@ -4,7 +4,7 @@
 #include <chrono>
 #include "os.hpp"
 #include "util/json-parser.hpp"
-#include "systems/transform-system.hpp"
+#include "systems/transform-update-system.hpp"
 #include "systems/resource-system.hpp"
 #include "systems/meta-engine-system.hpp"
 #include "systems/sound-system.hpp"
@@ -23,7 +23,7 @@ int main(int argCount, char **argValues) {
     glGetError(); // clear errors
 
     // Call each system's GetInstance to create the initial instance.
-    trillek::TransformMap::GetInstance();
+    trillek::TransformUpdateSystem::GetInstance();
     trillek::resource::ResourceMap::GetInstance();
 
     // start the physics system, must be done before loading any components.
@@ -83,6 +83,6 @@ int main(int argCount, char **argValues) {
     os.MakeCurrent();
     os.Terminate();
 
-    jparser.Serialize("assets/tests/", "transforms.json", trillek::TransformMap::GetInstance());
+    trillek::TransformUpdateSystem::GetInstance()->Serialize();
     return 0;
 }

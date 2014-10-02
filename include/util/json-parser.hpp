@@ -28,7 +28,15 @@ public:
      * \param[in] rapidjson::Document& document The document to serialize to.
      * \return bool False if an error occured in serializing.
      */
-    virtual bool Serialize(rapidjson::Document& document) = 0;
+    virtual bool Serialize(rapidjson::Document& document) { return false; }
+
+    /**
+    * \brief Serialize this object in place (via a stored value or such).
+    *
+    * This method doesn't have to be overridden and isn't required.
+    * \return bool False if an error occured in serializing.
+    */
+    virtual bool Serialize() { return false; }
 
     /**
      * \brief Parses this object from the provided JSON node.
@@ -53,7 +61,10 @@ private:
 
 struct JSONDocument {
     std::shared_ptr<resource::TextFile> file; // The loaded TextFile. Usefull if the file is reloaded.
+    std::string fname; // The filename so it can be saved to later.
     rapidjson::Document document; // Currently parsed document.
+    JSONDocument();
+    ~JSONDocument();
 };
 
 class JSONPasrser {
@@ -75,6 +86,7 @@ public:
      * If there isn't a supplied filename then each type is serialized as "node_type_name.json
      * \param[in] const std::string& out_directory The directory in which to place the file(s).
      * \param[in] const std::string& fname The filename of where to serialize the JSON.
+     * \param[in] std::shared_ptr<Parser> parser The parser to serialize.
      * \return void
      */
     void Serialize(const std::string& out_directory, const std::string& fname, std::shared_ptr<Parser> parser);
@@ -98,6 +110,8 @@ public:
      * \return void
      */
     static void RegisterTypes();
+
+    static rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> allocator;
 private:
     std::list<std::shared_ptr<JSONDocument>> documents;
     static std::map<std::string, std::shared_ptr<Parser>> parsers; // Mapping of node_type_name to parser

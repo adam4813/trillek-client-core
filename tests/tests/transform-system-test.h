@@ -5,35 +5,28 @@
 #include "gtest/gtest-spi.h"
 #include <string>
 
-#include "systems/transform-system.hpp"
+#include "systems/transform-update-system.hpp"
+#include "ecs-state-system.hpp"
 #include "transform.hpp"
 
 using namespace trillek;
 
 namespace {
     TEST(TransformSystemTest, AddTransform) {
-        // Get the instance allocated, and then we can use the shortcut static mathods.
-        TransformMap::GetInstance();
-
-        auto transform = TransformMap::AddTransform(0);
+        auto transform = std::make_shared<Transform>(0);
+        ECSStateSystem<Transform>::SetState(0, transform);
 
         EXPECT_TRUE(transform != nullptr);
     }
     TEST(TransformSystemTest, GetTransform) {
-        auto transform = TransformMap::GetTransform(0);
+        auto transform = ECSStateSystem<Transform>::GetState(0);
 
         EXPECT_TRUE(transform != nullptr);
     }
-    TEST(TransformSystemTest, AddExistingTransform) {
-        auto transform = TransformMap::GetTransform(0);
-        auto transform2 = TransformMap::AddTransform(0);
-
-        EXPECT_TRUE(transform == transform2);
-    }
     TEST(TransformSystemTest, RemoveTransform) {
-        TransformMap::RemoveTransform(0);
+        ECSStateSystem<Transform>::RemoveState(0);
 
-        auto transform = TransformMap::GetTransform(0);
+        auto transform = ECSStateSystem<Transform>::GetState(0);
 
         EXPECT_TRUE(transform == nullptr);
     }

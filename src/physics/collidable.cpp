@@ -1,8 +1,9 @@
 #include "physics/collidable.hpp"
 #include "transform.hpp"
-#include "systems/transform-system.hpp"
+#include "systems/transform-update-system.hpp"
 #include "systems/resource-system.hpp"
 #include "resources/mesh.hpp"
+#include "ecs-state-system.hpp"
 
 #include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
 
@@ -112,7 +113,7 @@ bool Collidable::Initialize(const std::vector<Property> &properties) {
 }
 
 void Collidable::SetEntity(unsigned int entity_id) {
-    this->entity_transform = TransformMap::GetTransform(entity_id);
+    this->entity_transform = ECSStateSystem<Transform>::GetState(entity_id);
     if(!this->entity_transform) {
         return;
     }

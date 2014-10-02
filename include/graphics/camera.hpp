@@ -1,11 +1,12 @@
 #ifndef CAMERA_HPP_INCLUDED
 #define CAMERA_HPP_INCLUDED
 
-#include "systems/transform-system.hpp"
 #include "component.hpp"
 #include "type-id.hpp"
 #include "transform.hpp"
 #include <memory>
+#include "os.hpp"
+#include "ecs-state-system.hpp"
 
 namespace trillek {
 namespace graphics {
@@ -25,7 +26,7 @@ public:
         this->entity_id = entity_id;
         this->entity_speed = 10.0f;
         this->entity_rotation_speed = 5.0f;
-        this->camera_transform = TransformMap::GetTransform(entity_id);
+        this->camera_transform = ECSStateSystem<Transform>::GetState(entity_id);
     }
 
     /**

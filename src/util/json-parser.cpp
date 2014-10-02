@@ -3,6 +3,7 @@
 #include "systems/resource-system.hpp"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/filestream.h"
+#include "rapidjson/stringbuffer.h"
 
 #include <mutex>
 #include <iostream>
@@ -10,9 +11,26 @@
 namespace trillek {
 namespace util {
 
+
+JSONDocument::JSONDocument() : document(&JSONPasrser::allocator) {
+
+}
+
+JSONDocument::~JSONDocument() {
+    rapidjson::StringBuffer buffer;
+    rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+    this->document.Accept(writer);
+
+    std::ofstream ofile(this->fname, std::ofstream::out);
+    ofile << buffer.GetString();
+    ofile.close();
+}
+
 std::string MakeString(const rapidjson::Value& v) {
     return std::string(v.GetString(), v.GetStringLength());
 }
+
+rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> JSONPasrser::allocator;
 
 JSONPasrser::JSONPasrser() {
     static std::once_flag only_one;
@@ -43,6 +61,7 @@ bool JSONPasrser::Parse(const std::string& fname) {
     if (doc == nullptr) {
         doc = std::make_shared<JSONDocument>();
         doc->file = file;
+        doc->fname = fname; // Store the file name for later serializing.
         this->documents.push_back(doc);
     }
 

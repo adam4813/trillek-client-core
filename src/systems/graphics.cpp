@@ -2,7 +2,7 @@
 #include "type-id.hpp"
 #include "systems/graphics.hpp"
 #include "systems/resource-system.hpp"
-#include "systems/transform-system.hpp"
+#include "systems/transform-update-system.hpp"
 #include "resources/text-file.hpp"
 #include "resources/md5mesh.hpp"
 #include "resources/mesh.hpp"
@@ -916,7 +916,7 @@ void RenderSystem::AddComponent(const id_t entity_id, std::shared_ptr<ComponentB
     }
 
     // We mark the transform to force the initial model matrix creation.
-    TransformMap::GetTransform(entity_id)->MarkAsModified();
+    ECSStateSystem<Transform>::GetState(entity_id)->MarkAsModified();
 }
 
 void RenderSystem::RemoveRenderable(const id_t entity_id) {
@@ -987,7 +987,7 @@ void RenderSystem::HandleEvents(const frame_tp& timepoint) {
             ren.second->GetAnimation()->UpdateAnimation(delta.count() * 1E-9);
         }
     }
-    updated_transforms = TransformMap::GetAsyncUpdatedTransforms().GetFuture(timepoint);
+    updated_transforms = TransformUpdateSystem::GetAsyncUpdatedMap().GetFuture(timepoint);
     if(updated_transforms.valid()) {
         UpdateModelMatrices();
     }

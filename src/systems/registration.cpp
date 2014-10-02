@@ -18,7 +18,7 @@
 
 #include "systems/resource-system.hpp"
 #include "systems/graphics.hpp"
-#include "systems/transform-system.hpp"
+#include "systems/transform-update-system.hpp"
 #include "systems/component-factory.hpp"
 #include "systems/sound-system.hpp"
 #include "util/json-parser.hpp"
@@ -50,7 +50,7 @@ void ComponentFactory::RegisterTypes() {
 void util::JSONPasrser::RegisterTypes() {
     RegisterParser(TrillekGame::GetGraphicsInstance());
     RegisterParser(resource::ResourceMap::GetInstance());
-    RegisterParser(TransformMap::GetInstance());
+    RegisterParser(TransformUpdateSystem::GetInstance());
     RegisterParser(ComponentFactory::GetInstance());
     RegisterParser(sound::System::GetInstance());
 }
