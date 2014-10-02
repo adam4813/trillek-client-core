@@ -18,7 +18,7 @@ namespace graphics {
 
 class Shader;
 class Texture;
-class Animation;
+class AnimationSystem;
 
 class Renderable : public ComponentBase {
 public:
@@ -76,17 +76,17 @@ public:
     /**
      * \brief Sets the animation for this component.
      *
-     * \param[in] const std::shared_ptr<Animation> a The animation for this component.
+     * \param[in] const std::shared_ptr<AnimationSystem> a The animation for this component.
      * \return void
      */
-    void SetAnimation(std::shared_ptr<Animation> a);
+    void SetAnimation(std::shared_ptr<AnimationSystem> a);
 
     /**
      * \brief Gets the animation for this component.
      *
-     * \return const std::shared_ptr<Animation> The animation for this component.
+     * \return const std::shared_ptr<AnimationSystem> The animation for this component.
      */
-    std::shared_ptr<Animation> GetAnimation() const;
+    std::shared_ptr<AnimationSystem> GetAnimation() const;
 
     /**
      * \brief Gets the number of buffer groups.
@@ -124,7 +124,7 @@ private:
 
     std::shared_ptr<resource::Mesh> mesh;
 
-    std::shared_ptr<Animation> animation;
+    std::shared_ptr<AnimationSystem> animation;
 
     std::shared_ptr<Shader> shader;
 

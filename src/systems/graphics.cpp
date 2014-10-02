@@ -10,7 +10,7 @@
 #include "graphics/material.hpp"
 #include "graphics/renderable.hpp"
 #include "graphics/six-dof-camera.hpp"
-#include "graphics/animation.hpp"
+#include "graphics/animation-system.hpp"
 #include "graphics/light.hpp"
 #include "graphics/render-list.hpp"
 #include "logging.hpp"
@@ -528,7 +528,7 @@ void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_m
                     auto renanim = rengrp.animations.find(entity_id);
                     if (renanim != rengrp.animations.end()) {
                         glUniform1i(u_animate_loc, 1);
-                        auto &animmatricies = renanim->second->animation_matricies;
+                        auto &animmatricies = renanim->second->matrices;
                         glUniformMatrix4fv(u_animatrix_loc, animmatricies.size(), GL_FALSE, &animmatricies[0][0][0]);
                     }
                     else {
@@ -592,7 +592,7 @@ void RenderSystem::RenderDepthOnlyPass(const float *view_matrix, const float *pr
                     auto renanim = rengrp.animations.find(entity_id);
                     if (renanim != rengrp.animations.end()) {
                         glUniform1i(u_animate_loc, 1);
-                        auto &animmatricies = renanim->second->animation_matricies;
+                        auto &animmatricies = renanim->second->matrices;
                         glUniformMatrix4fv(u_animatrix_loc, animmatricies.size(), GL_FALSE, &animmatricies[0][0][0]);
                     }
                     else {
@@ -880,8 +880,9 @@ bool RenderSystem::AddEntityComponent(const id_t entity_id, std::shared_ptr<Rend
             if ((ren_grp_itr.renderable->GetMesh() == ren->GetMesh()) && (ren_grp_itr.buffer_group_index == i)) {
                 rengrp = &ren_grp_itr;
                 rengrp->instances.push_back(entity_id);
-                if (ren->GetAnimation()) {
-                    rengrp->animations[entity_id] = ren->GetAnimation();
+                auto anim_state = ECSStateSystem<AnimationState>::GetState(entity_id);
+                if (anim_state) {
+                    rengrp->animations[entity_id] = anim_state;
                 }
                 break;
             }
@@ -889,8 +890,9 @@ bool RenderSystem::AddEntityComponent(const id_t entity_id, std::shared_ptr<Rend
         if (rengrp == nullptr) {
             MaterialGroup::TextureGroup::RenderableGroup temp;
             temp.renderable = ren;
-            if (ren->GetAnimation()) {
-                temp.animations[entity_id] = ren->GetAnimation();
+            auto anim_state = ECSStateSystem<AnimationState>::GetState(entity_id);
+            if (anim_state) {
+                temp.animations[entity_id] = anim_state;
             }
 
             temp.buffer_group_index = i;

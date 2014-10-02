@@ -8,7 +8,7 @@
 #include "graphics/renderable.hpp"
 #include "graphics/texture.hpp"
 #include "graphics/shader.hpp"
-#include "graphics/animation.hpp"
+#include "graphics/animation-system.hpp"
 
 #include <sstream>
 
@@ -152,11 +152,11 @@ std::shared_ptr<Shader> Renderable::GetShader() const {
     return this->shader;
 }
 
-void Renderable::SetAnimation(std::shared_ptr<Animation> a) {
+void Renderable::SetAnimation(std::shared_ptr<AnimationSystem> a) {
     this->animation = a;
 }
 
-std::shared_ptr<Animation> Renderable::GetAnimation() const {
+std::shared_ptr<AnimationSystem> Renderable::GetAnimation() const {
     return this->animation;
 }
 
@@ -198,8 +198,12 @@ bool Renderable::Initialize(const std::vector<Property> &properties) {
     if (animation_file) {
         // Make sure the mesh is valid for the animation file.
         if (animation_file->CheckMesh(this->mesh)) {
-            this->animation = std::make_shared<Animation>();
+            this->animation = std::make_shared<AnimationSystem>();
             this->animation->SetAnimationFile(animation_file);
+            auto state = std::make_shared<AnimationState>();
+            this->animation->SetState(this->entity_id, state);
+            auto def_state = this->animation->GetDefaultState();
+            state->matrices.assign(def_state->matrices.begin(), def_state->matrices.end());
         }
         else {
             return false;

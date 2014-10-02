@@ -35,7 +35,7 @@ enum class RenderCmd : unsigned int;
 class RenderCommandItem;
 class Renderable;
 class CameraBase;
-class Animation;
+struct AnimationState;
 class LightBase;
 class RenderList;
 
@@ -45,7 +45,7 @@ struct MaterialGroup {
         std::vector<size_t> texture_indicies;
         struct RenderableGroup {
             std::shared_ptr<Renderable> renderable;
-            std::map<id_t, std::shared_ptr<Animation>> animations;
+            std::map<id_t, std::shared_ptr<AnimationState>> animations;
             std::list<id_t> instances;
             size_t buffer_group_index;
         };
