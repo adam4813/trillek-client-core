@@ -10,7 +10,7 @@ namespace trillek {
 
 using graphics::AnimationState;
 template<>
-std::map<id_t, std::shared_ptr<AnimationState>> ECSStateSystem<AnimationState>::states; // Mapping of entity ID to animation state.
+std::map<id_t, std::shared_ptr<AnimationState>> ECSStateSystem<AnimationState>::states = { }; // Mapping of entity ID to animation state.
 template<>
 std::shared_ptr<AnimationState> ECSStateSystem<AnimationState>::default_state = std::make_shared<AnimationState>();
 
