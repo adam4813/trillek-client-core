@@ -9,9 +9,8 @@
 namespace trillek {
 
 using graphics::AnimationState;
-using graphics::AnimationSystem;
-std::map<id_t, std::shared_ptr<AnimationState>> AnimationSystem::states; // Mapping of entity ID to animation state.
-std::shared_ptr<AnimationState> AnimationSystem::default_state = std::make_shared<AnimationState>();
+std::map<id_t, std::shared_ptr<AnimationState>> ECSStateSystem<AnimationState>::states; // Mapping of entity ID to animation state.
+std::shared_ptr<AnimationState> ECSStateSystem<AnimationState>::default_state = std::make_shared<AnimationState>();
 
 namespace graphics {
 

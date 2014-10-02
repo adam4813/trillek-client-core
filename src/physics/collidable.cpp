@@ -1,6 +1,5 @@
 #include "physics/collidable.hpp"
 #include "transform.hpp"
-#include "systems/transform-update-system.hpp"
 #include "systems/resource-system.hpp"
 #include "resources/mesh.hpp"
 #include "ecs-state-system.hpp"

@@ -6,16 +6,17 @@
 #include "lua/lua_glm.hpp"
 
 #include "transform.hpp"
-#include "systems/transform-system.hpp"
+#include "ecs-state-system.hpp"
 
 namespace trillek {
 namespace script {
 
 int Traansform_get(lua_State* L) {
     const int entity_id = luaL_checkinteger(L, 1);
-    auto transform = TransformMap::GetTransform(entity_id);
+    auto transform = ECSStateSystem<Transform>::GetState(entity_id);
     if (!transform) {
-        transform = TransformMap::AddTransform(entity_id);
+        transform = std::make_shared<Transform>(entity_id);
+        ECSStateSystem<Transform>::SetState(entity_id, transform);
     }
     luaW_push<Transform>(L, transform.get());
     return 1;
