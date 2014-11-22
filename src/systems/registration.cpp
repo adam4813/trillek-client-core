@@ -1,6 +1,4 @@
 #include "trillek-game.hpp"
-
-#if defined(_CLIENT_) || defined(_STANDALONE_)
 #include "graphics/renderable.hpp"
 #include "graphics/camera.hpp"
 #include "graphics/six-dof-camera.hpp"
@@ -13,7 +11,6 @@
 #include "systems/sound-system.hpp"
 #include "resources/md5anim.hpp"
 #include "resources/pixel-buffer.hpp"
-#endif
 
 #include "components/component-factory.hpp"
 #include "components/component-templates.hpp"
@@ -48,7 +45,6 @@ namespace trillek {
 
 using component::Component;
 
-#if defined(_CLIENT_) || defined(_STANDALONE_)
 void graphics::RenderSystem::RegisterTypes() {
     // textures are implicitly instanced most of the time
     RegisterClassGenParser<graphics::Texture>();
@@ -59,7 +55,6 @@ void graphics::RenderSystem::RegisterTypes() {
     RegisterStaticParsers();
     RegisterListResolvers();
 }
-#endif
 
 void ComponentFactory::RegisterTypes() {
     auto& shared = TrillekGame::GetSharedComponent();
@@ -76,14 +71,12 @@ void ComponentFactory::RegisterTypes() {
     RegisterComponentType(ComponentAdder<SYSTEM,Component::Health,uint32_t>(system_value));
     RegisterComponentType(ComponentAdder<SHARED,Component::GraphicTransform,bool>(shared));
     RegisterComponentType(ComponentAdder<SHARED,Component::GameTransform,bool>(shared));
-#if defined(_CLIENT_) || defined(_STANDALONE_)
     RegisterComponentType<graphics::Renderable>();
     RegisterComponentType<graphics::LightBase>();
     RegisterComponentType<graphics::SixDOFCamera>();
     RegisterSystem<graphics::Renderable>(&TrillekGame::GetGraphicSystem());
     RegisterSystem<graphics::LightBase>(&TrillekGame::GetGraphicSystem());
     RegisterSystem<graphics::CameraBase>(&TrillekGame::GetGraphicSystem());
-#endif
 }
 
 void gui::GuiSystem::RegisterTypes() {
@@ -91,10 +84,8 @@ void gui::GuiSystem::RegisterTypes() {
 }
 
 void util::JSONPasrser::RegisterTypes() {
-#if defined(_CLIENT_) || defined(_STANDALONE_)
     RegisterParser(TrillekGame::GetGraphicsInstance());
     RegisterParser(sound::System::GetInstance());
-#endif
     RegisterParser(resource::ResourceMap::GetInstance());
     RegisterParser(TransformMap::GetInstance());
     RegisterParser(ComponentFactory::GetInstance());
@@ -104,10 +95,8 @@ void resource::ResourceMap::RegisterTypes() {
     RegisterResourceType<resource::TextFile>();
     RegisterResourceType<resource::MD5Mesh>();
     RegisterResourceType<resource::OBJ>();
-#if defined(_CLIENT_) || defined(_STANDALONE_)
     RegisterResourceType<resource::PixelBuffer>();
     RegisterResourceType<resource::MD5Anim>();
-#endif
 }
 
 } // End of trillek

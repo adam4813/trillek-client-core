@@ -1,5 +1,3 @@
-#if defined(_CLIENT_) || defined(_STANDALONE_)
-
 #include "systems/resource-system.hpp"
 #include "systems/graphics.hpp"
 #include "trillek-game.hpp"
@@ -210,4 +208,3 @@ bool Renderable::Initialize(const std::vector<Property> &properties) {
 
 } // End of graphics
 } // End of trillek
-#endif

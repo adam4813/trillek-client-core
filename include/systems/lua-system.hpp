@@ -6,7 +6,7 @@
 #include <list>
 #include <mutex>
 
-#include "dispatcher.hpp"
+#include "systems/dispatcher.hpp"
 #include "os-event.hpp"
 #include "trillek.hpp"
 #include "systems/system-base.hpp"
@@ -26,7 +26,8 @@ std::string lua_tostdstring(lua_State*, int);
 
 typedef int (LuaRegisterFunction)(lua_State*);
 
-class LuaSystem : public SystemBase,
+class LuaSystem final :
+    public SystemBase,
     public UIEventHandler,
     public event::Subscriber<KeyboardEvent>,
     public event::Subscriber<MouseBtnEvent>,

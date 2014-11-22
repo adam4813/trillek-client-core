@@ -30,11 +30,11 @@ class System;
 class SystemValue;
 }
 
-class TrillekGame {
+class TrillekGame final {
 public:
 
     TrillekGame() {};
-    virtual ~TrillekGame() {};
+    ~TrillekGame() {};
     static void Initialize();
 
     /** \brief Return the scheduler
@@ -101,7 +101,6 @@ public:
      */
     static void NotifyCloseWindow() { close_window = true; };
 
-#if defined(_CLIENT_) || defined(_STANDALONE_)
     /** \brief Return the Lua system instance
     *
     * \return script::LuaSystem
@@ -133,7 +132,6 @@ public:
      * \return MetaEngineSystem& the instance
      */
     static MetaEngineSystem& GetEngineSystem() { return *engine_sys.get(); };
-#endif // defined(_CLIENT_) || defined(_STANDALONE_)
 
 private:
 
@@ -146,13 +144,11 @@ private:
     static std::unique_ptr<component::SystemValue> system_value_component;
     static bool close_window;
 
-#if defined(_CLIENT_) || defined(_STANDALONE_)
     static std::once_flag once_graphics;
     static std::shared_ptr<graphics::RenderSystem> gl_sys_ptr;
     static std::unique_ptr<gui::GuiSystem> gui_system;
     static script::LuaSystem lua_sys;
     static std::unique_ptr<MetaEngineSystem> engine_sys;
-#endif
 };
 }
 
