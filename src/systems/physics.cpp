@@ -48,7 +48,7 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
 
     // First moving entities that have no combined velocity
     OnTrue(GetLastPositiveBitMap<Component::Velocity>()
-                                        & ~Bitmap<Component::ReferenceFrame>(),
+            & ~Bitmap<Component::ReferenceFrame>(),
         [](id_t entity_id) {
             // first inject velocity of entities that have no reference frame
             auto& body = *Get<Component::Collidable>(entity_id).GetRigidBody();
@@ -60,7 +60,7 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
     );
     // Second moving entities with a combined velocity
     OnTrue(GetLastPositiveBitMap<Component::Velocity>()
-                                        & Bitmap<Component::ReferenceFrame>(),
+            & Bitmap<Component::ReferenceFrame>(),
         [](id_t entity_id) {
             // combine velocity
             auto reference_id = Get<Component::ReferenceFrame>(entity_id);
@@ -79,7 +79,7 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
 
     // Third, entities with reference frame that have moved
     OnTrue(GetLastPositiveBitMap<Component::Velocity>()
-                                        & Bitmap<Component::IsReferenceFrame>(),
+            & Bitmap<Component::IsReferenceFrame>(),
         [&](id_t entity_id) {
             // todo
         }
@@ -163,16 +163,14 @@ void PhysicsSystem::Terminate() {
 void PhysicsSystem::SetGravity(const unsigned int entity_id, const btVector3& f) {
     auto& system = TrillekGame::GetSystemComponent();
     if (system.Has<Component::Collidable>(entity_id)) {
-        system.Get<Component::Collidable>(entity_id).GetRigidBody()
-                                                        ->setGravity(f);
+        system.Get<Component::Collidable>(entity_id).GetRigidBody()->setGravity(f);
     }
 }
 
 void PhysicsSystem::SetNormalGravity(const unsigned int entity_id) {
     auto& system = TrillekGame::GetSystemComponent();
     if (system.Has<Component::Collidable>(entity_id)) {
-        system.Get<Component::Collidable>(entity_id).GetRigidBody()
-                        ->setGravity(this->dynamicsWorld->getGravity());
+        system.Get<Component::Collidable>(entity_id).GetRigidBody()->setGravity(this->dynamicsWorld->getGravity());
     }
 }
 
