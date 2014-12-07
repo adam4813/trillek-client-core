@@ -10,7 +10,7 @@ namespace trillek {
 namespace script {
 
 int Gui_Get(lua_State* L) {
-    luaW_push<gui::GuiSystem>(L, &TrillekGame::GetGUISystem());
+    luaW_push<gui::GuiSystem>(L, &game.GetGUISystem());
     return 1;
 }
 int Gui_LoadDoc(lua_State* L) {

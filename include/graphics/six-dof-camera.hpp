@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include "graphics/camera.hpp"
+#include "os-event.hpp"
 
 namespace trillek {
 namespace graphics {

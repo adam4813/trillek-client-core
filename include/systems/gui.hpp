@@ -16,6 +16,7 @@
 #include <Rocket/Core/Dictionary.h>
 
 #include "os-event.hpp"
+#include "systems/dispatcher.hpp"
 #include "systems/ui-event.hpp"
 
 namespace trillek {

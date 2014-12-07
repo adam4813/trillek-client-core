@@ -6,22 +6,22 @@
 
 namespace trillek {
 void MetaEngineSystem::ThreadInit() {
-    TrillekGame::GetLuaSystem().ThreadInit();
-    TrillekGame::GetPhysicsSystem().ThreadInit();
+    game.GetLuaSystem().ThreadInit();
+    game.GetPhysicsSystem().ThreadInit();
 }
 
 void MetaEngineSystem::RunBatch() const {
-    TrillekGame::GetLuaSystem().RunBatch();
-    TrillekGame::GetPhysicsSystem().RunBatch();
+    game.GetLuaSystem().RunBatch();
+    game.GetPhysicsSystem().RunBatch();
 };
 
 void MetaEngineSystem::HandleEvents(frame_tp timepoint) {
-    TrillekGame::GetLuaSystem().HandleEvents(timepoint);
-    TrillekGame::GetPhysicsSystem().HandleEvents(timepoint);
+    game.GetLuaSystem().HandleEvents(timepoint);
+    game.GetPhysicsSystem().HandleEvents(timepoint);
 };
 
 void MetaEngineSystem::Terminate() {
-    TrillekGame::GetLuaSystem().Terminate();
-    TrillekGame::GetPhysicsSystem().Terminate();
+    game.GetLuaSystem().Terminate();
+    game.GetPhysicsSystem().Terminate();
 };
 }

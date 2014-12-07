@@ -14,7 +14,7 @@ namespace trillek {
 namespace script {
 
 int Physics_get(lua_State* L) {
-    luaW_push<physics::PhysicsSystem>(L, &TrillekGame::GetPhysicsSystem());
+    luaW_push<physics::PhysicsSystem>(L, &game.GetPhysicsSystem());
     return 1;
 }
 

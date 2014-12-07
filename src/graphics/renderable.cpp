@@ -47,7 +47,7 @@ void Renderable::UpdateBufferGroups() {
 
         // TODO: Loop through all the texture names in the mesh group and add the textures to the material.
         for (std::string texture_name : temp_meshgroup->textures) {
-            std::shared_ptr<Texture> texture = TrillekGame::GetGraphicSystem().Get<Texture>(texture_name);
+            std::shared_ptr<Texture> texture = game.GetGraphicSystem().Get<Texture>(texture_name);
             if (!texture) {
                 std::vector<Property> props;
                 props.push_back(Property("filename", texture_name));
@@ -62,7 +62,7 @@ void Renderable::UpdateBufferGroups() {
                 auto pixel_data = resource::ResourceMap::Create<resource::PixelBuffer>(name.str(), props);
                 if (pixel_data) {
                     texture = std::make_shared<Texture>(pixel_data, this->dyn_textures);
-                    TrillekGame::GetGraphicSystem().Add(name.str(), texture);
+                    game.GetGraphicSystem().Add(name.str(), texture);
                 }
             }
 
@@ -184,7 +184,7 @@ bool Renderable::Initialize(const std::vector<Property> &properties) {
         return false;
     }
 
-    this->shader = TrillekGame::GetGraphicSystem().Get<graphics::Shader>(shader_name);
+    this->shader = game.GetGraphicSystem().Get<graphics::Shader>(shader_name);
     if (!this->shader) {
         return false;
     }

@@ -1,7 +1,6 @@
 #ifndef TRILLEKGAME_HPP_INCLUDED
 #define TRILLEKGAME_HPP_INCLUDED
 
-#include "systems/lua-system.hpp"
 #include <memory>
 #include <mutex>
 
@@ -24,6 +23,9 @@ class PhysicsSystem;
 namespace sound {
 class System;
 }
+namespace script {
+class LuaSystem;
+}
 namespace component {
 class Shared;
 class System;
@@ -33,59 +35,59 @@ class SystemValue;
 class TrillekGame final {
 public:
 
-    TrillekGame() {};
-    ~TrillekGame() {};
-    static void Initialize();
+    TrillekGame();
+    ~TrillekGame();
+    void Initialize();
 
     /** \brief Return the scheduler
      *
      * \return TrillekScheduler& the scheduler
      */
-    static TrillekScheduler& GetScheduler() { return *scheduler.get(); }
+    TrillekScheduler& GetScheduler() { return *scheduler.get(); }
 
     /** \brief Return the GLFW instance
      *
      * \return OS& the instance
      */
-    static OS& GetOS() { return *glfw_os.get(); };
+    OS& GetOS() { return *glfw_os.get(); };
 
     /** \brief Return the physics system instance
      *
      * \return physics::PhysicsSystem& the instance
      */
-    static physics::PhysicsSystem& GetPhysicsSystem() { return *phys_sys.get(); }
+    physics::PhysicsSystem& GetPhysicsSystem() { return *phys_sys.get(); }
 
     /**
      * Get a reference to the GUI system
      */
-    static gui::GuiSystem& GetGUISystem();
+    gui::GuiSystem& GetGUISystem();
 
     /** \brief Get the FakeSystem
      *
      * \return FakeSystem& the fake system
      */
-    static FakeSystem& GetFakeSystem() { return *fake_system.get(); }
+    FakeSystem& GetFakeSystem() { return *fake_system.get(); }
 
     /** \brief Get the storage of shared components
      *
      * \return component::Shared& the storage
      *
      */
-    static component::Shared& GetSharedComponent() { return *shared_component.get(); };
+    component::Shared& GetSharedComponent() { return *shared_component.get(); };
 
     /** \brief Get the storage of system components stored by pointers
      *
      * \return component::System& the storage
      *
      */
-    static component::System& GetSystemComponent() { return *system_component.get(); };
+    component::System& GetSystemComponent() { return *system_component.get(); };
 
     /** \brief Get the storage of system components stored by values
      *
      * \return component::SystemValue& the storage
      *
      */
-    static component::SystemValue& GetSystemValueComponent() { return *system_value_component.get(); };
+    component::SystemValue& GetSystemValueComponent() { return *system_value_component.get(); };
 
     /** \brief Get the terminate flag
      *
@@ -93,37 +95,37 @@ public:
      *
      * \return bool true if we are about to terminate the program
      */
-    static bool GetTerminateFlag() { return close_window; };
+    bool GetTerminateFlag() { return close_window; };
 
     /** \brief Tells that the user tries to close the window
      *
      * This function is called by a callback set in GLFW
      */
-    static void NotifyCloseWindow() { close_window = true; };
+    void NotifyCloseWindow() { close_window = true; };
 
     /** \brief Return the Lua system instance
     *
     * \return script::LuaSystem
     */
-    static script::LuaSystem& GetLuaSystem() { return lua_sys; };
+    script::LuaSystem& GetLuaSystem() { return *lua_sys.get(); };
 
     /** \brief Return the sound system instance
      *
      * \return sound::System&
      */
-    static sound::System& GetSoundSystem();
+    sound::System& GetSoundSystem();
 
     /** \brief Return the graphic system instance
      *
      * \return graphics::System& the instance
      */
-    static graphics::RenderSystem& GetGraphicSystem();
+    graphics::RenderSystem& GetGraphicSystem();
 
     /** \brief Return the graphic system instance pointer
      *
      * \return std::shared_ptr<graphics::RenderSystem> the instance
      */
-    static std::shared_ptr<graphics::RenderSystem> GetGraphicsInstance();
+    std::shared_ptr<graphics::RenderSystem> GetGraphicsInstance();
 
     /** \brief Return the meta engine system instance
      *
@@ -131,26 +133,28 @@ public:
      *
      * \return MetaEngineSystem& the instance
      */
-    static MetaEngineSystem& GetEngineSystem() { return *engine_sys.get(); };
+    MetaEngineSystem& GetEngineSystem() { return *engine_sys.get(); };
 
-    static std::mutex transforms_lock;
+    mutable std::mutex transforms_lock;
 private:
 
-    static std::unique_ptr<TrillekScheduler> scheduler;
-    static std::unique_ptr<FakeSystem> fake_system;
-    static std::unique_ptr<physics::PhysicsSystem> phys_sys;
-    static std::unique_ptr<OS> glfw_os;
-    static std::unique_ptr<component::Shared> shared_component;
-    static std::unique_ptr<component::System> system_component;
-    static std::unique_ptr<component::SystemValue> system_value_component;
-    static bool close_window;
+    std::unique_ptr<TrillekScheduler> scheduler;
+    std::unique_ptr<FakeSystem> fake_system;
+    std::unique_ptr<physics::PhysicsSystem> phys_sys;
+    std::unique_ptr<OS> glfw_os;
+    std::unique_ptr<component::Shared> shared_component;
+    std::unique_ptr<component::System> system_component;
+    std::unique_ptr<component::SystemValue> system_value_component;
+    bool close_window;
 
-    static std::once_flag once_graphics;
-    static std::shared_ptr<graphics::RenderSystem> gl_sys_ptr;
-    static std::unique_ptr<gui::GuiSystem> gui_system;
-    static script::LuaSystem lua_sys;
-    static std::unique_ptr<MetaEngineSystem> engine_sys;
+    std::once_flag once_graphics;
+    std::shared_ptr<graphics::RenderSystem> gl_sys_ptr;
+    std::unique_ptr<gui::GuiSystem> gui_system;
+    std::unique_ptr<script::LuaSystem> lua_sys;
+    std::unique_ptr<MetaEngineSystem> engine_sys;
 };
+
+extern TrillekGame game;
 }
 
 #endif // TRILLEKGAME_HPP_INCLUDED

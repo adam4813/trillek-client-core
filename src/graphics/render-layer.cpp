@@ -299,13 +299,13 @@ void RenderAttachment::Generate(int width, int height, int samplecount) {
         if(texture->GetID()) return;
     }
     else {
-        auto texptr = TrillekGame::GetGraphicSystem().Get<Texture>(texturename);
+        auto texptr = game.GetGraphicSystem().Get<Texture>(texturename);
         if(texptr) {
             texture = std::move(texptr);
         }
         else {
             texture.reset(new Texture());
-            TrillekGame::GetGraphicSystem().Add(texturename, texture);
+            game.GetGraphicSystem().Add(texturename, texture);
         }
     }
     texture->SetCompare(this->shadowcompare);
@@ -466,7 +466,7 @@ bool RenderLayer::SystemStart(const std::list<Property> &settings) {
     }
     this->attachments.clear();
     for(auto attachname : this->attachmentnames) {
-        auto attachptr = TrillekGame::GetGraphicSystem().Get<RenderAttachment>(attachname);
+        auto attachptr = game.GetGraphicSystem().Get<RenderAttachment>(attachname);
         if(attachptr) {
             this->attachments.push_back(attachptr);
         }

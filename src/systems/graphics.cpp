@@ -309,7 +309,7 @@ void RenderSystem::RegisterListResolvers() {
 }
 
 void RenderSystem::ThreadInit() {
-    TrillekGame::GetOS().MakeCurrent();
+    game.GetOS().MakeCurrent();
 }
 
 void RenderSystem::RunBatch() const {
@@ -317,11 +317,11 @@ void RenderSystem::RunBatch() const {
     if(!this->frame_drop) {
         RenderScene();
 
-        TrillekGame::GetOS().SwapBuffers();
+        game.GetOS().SwapBuffers();
     }
     // If the user closes the window, we notify all the systems
-    if (TrillekGame::GetOS().Closing()) {
-        TrillekGame::NotifyCloseWindow();
+    if (game.GetOS().Closing()) {
+        game.NotifyCloseWindow();
     }
 }
 
@@ -781,7 +781,7 @@ void RenderSystem::RenderLightingPass(const glm::mat4x4 &view_matrix, const floa
                     }
                 }
                 else if(activelight->shadows && lp_itr->GetName() == "shadow") {
-                    shadowbuf = TrillekGame::GetGraphicSystem().Get<Texture>(lp_itr->Get<std::string>());
+                    shadowbuf = Get<Texture>(lp_itr->Get<std::string>());
                     if(shadowbuf) {
                         useshadow = 1 + debugmode;
                         glActiveTexture(GL_TEXTURE4);
@@ -804,11 +804,11 @@ void RenderSystem::RenderLightingPass(const glm::mat4x4 &view_matrix, const floa
 
 inline void RenderSystem::UpdateModelMatrices(const frame_tp& timepoint) {
     auto& transform_container =
-        TrillekGame::GetSharedComponent().Map<Component::GraphicTransform>();
+        game.GetSharedComponent().Map<Component::GraphicTransform>();
     frame_tp rtp;
     static frame_tp ltp;
     rtp = ltp;
-    std::unique_lock<std::mutex> tslock(TrillekGame::transforms_lock, std::defer_lock);
+    std::unique_lock<std::mutex> tslock(game.transforms_lock, std::defer_lock);
     if( !tslock.try_lock() ) {
         return;
     }
@@ -1095,7 +1095,7 @@ void RenderSystem::RemoveRenderable(const id_t entity_id) {
 }
 
 void RenderSystem::HandleEvents(frame_tp timepoint) {
-    auto now = TrillekGame::GetOS().GetTime().count();
+    auto now = game.GetOS().GetTime().count();
     static frame_tp last_tp = now;
     auto delta = now - last_tp;
     if(delta > 66666666ll) {
@@ -1112,11 +1112,11 @@ void RenderSystem::HandleEvents(frame_tp timepoint) {
             this->frame_drop_count = 0;
         }
         this->frame_drop = false;
-        TrillekGame::GetGUISystem().Update();
+        game.GetGUISystem().Update();
         gui_interface->CheckClear();
         gui_interface->gui_renderset.clear();
         gui_interface->offsets.clear();
-        TrillekGame::GetGUISystem().InvokeRender(); // rebuilds geometry if needed
+        game.GetGUISystem().InvokeRender(); // rebuilds geometry if needed
         gui_interface->CheckReload();
     }
     last_tp = now;
@@ -1134,7 +1134,7 @@ void RenderSystem::HandleEvents(frame_tp timepoint) {
 };
 
 void RenderSystem::Terminate() {
-    TrillekGame::GetOS().DetachContext();
+    game.GetOS().DetachContext();
 }
 
 } // End of graphics

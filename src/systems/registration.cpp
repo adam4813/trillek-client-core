@@ -9,6 +9,7 @@
 #include "systems/graphics.hpp"
 #include "systems/gui.hpp"
 #include "systems/sound-system.hpp"
+#include "systems/lua-system.hpp"
 #include "resources/md5anim.hpp"
 #include "resources/pixel-buffer.hpp"
 
@@ -57,9 +58,9 @@ void graphics::RenderSystem::RegisterTypes() {
 }
 
 void ComponentFactory::RegisterTypes() {
-    auto& shared = TrillekGame::GetSharedComponent();
-    auto& system = TrillekGame::GetSystemComponent();
-    auto& system_value = TrillekGame::GetSystemValueComponent();
+    auto& shared = game.GetSharedComponent();
+    auto& system = game.GetSystemComponent();
+    auto& system_value = game.GetSystemValueComponent();
     RegisterComponentType(ComponentAdder<SYSTEM,Component::Collidable>(system));
     RegisterComponentType(ComponentAdder<SHARED,Component::Velocity, bool>(shared));
     RegisterComponentType(ComponentAdder<SHARED,Component::VelocityMax, bool>(shared));
@@ -73,17 +74,17 @@ void ComponentFactory::RegisterTypes() {
     RegisterComponentType<graphics::Renderable>();
     RegisterComponentType<graphics::LightBase>();
     RegisterComponentType<graphics::SixDOFCamera>();
-    RegisterSystem<graphics::Renderable>(&TrillekGame::GetGraphicSystem());
-    RegisterSystem<graphics::LightBase>(&TrillekGame::GetGraphicSystem());
-    RegisterSystem<graphics::CameraBase>(&TrillekGame::GetGraphicSystem());
+    RegisterSystem<graphics::Renderable>(&game.GetGraphicSystem());
+    RegisterSystem<graphics::LightBase>(&game.GetGraphicSystem());
+    RegisterSystem<graphics::CameraBase>(&game.GetGraphicSystem());
 }
 
 void gui::GuiSystem::RegisterTypes() {
-    RegisterHandler("lua", &TrillekGame::GetLuaSystem());
+    RegisterHandler("lua", &game.GetLuaSystem());
 }
 
 void util::JSONPasrser::RegisterTypes() {
-    RegisterParser(TrillekGame::GetGraphicsInstance());
+    RegisterParser(game.GetGraphicsInstance());
     RegisterParser(sound::System::GetInstance());
     RegisterParser(resource::ResourceMap::GetInstance());
     RegisterParser(TransformMap::GetInstance());

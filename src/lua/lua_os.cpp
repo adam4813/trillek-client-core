@@ -11,7 +11,7 @@ namespace trillek {
 namespace script {
 
 int OS_get(lua_State* L) {
-    luaW_push<OS>(L, &TrillekGame::GetOS());
+    luaW_push<OS>(L, &game.GetOS());
     return 1;
 }
 

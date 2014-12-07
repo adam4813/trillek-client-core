@@ -115,7 +115,7 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
 
     dynamicsWorld->stepSimulation(delta * 1.0E-9, 10);
     // Set out transform updates.
-    auto& bodymap = TrillekGame::GetSystemComponent().Map<Component::Collidable>();
+    auto& bodymap = game.GetSystemComponent().Map<Component::Collidable>();
     for (auto& shape : bodymap) {
         btTransform transform;
         Get<Component::Collidable>(shape.second)->GetRigidBody()->getMotionState()->getWorldTransform(transform);
@@ -130,7 +130,7 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
 
     // Publish the new updated transforms map
     {
-        std::lock_guard<std::mutex> tslock(TrillekGame::transforms_lock);
+        std::lock_guard<std::mutex> tslock(game.transforms_lock);
         Commit<Component::GraphicTransform>(timepoint);
     }
 }
@@ -164,14 +164,14 @@ void PhysicsSystem::Terminate() {
 }
 
 void PhysicsSystem::SetGravity(const unsigned int entity_id, const btVector3& f) {
-    auto& system = TrillekGame::GetSystemComponent();
+    auto& system = game.GetSystemComponent();
     if (system.Has<Component::Collidable>(entity_id)) {
         system.Get<Component::Collidable>(entity_id).GetRigidBody()->setGravity(f);
     }
 }
 
 void PhysicsSystem::SetNormalGravity(const unsigned int entity_id) {
-    auto& system = TrillekGame::GetSystemComponent();
+    auto& system = game.GetSystemComponent();
     if (system.Has<Component::Collidable>(entity_id)) {
         system.Get<Component::Collidable>(entity_id).GetRigidBody()->setGravity(this->dynamicsWorld->getGravity());
     }
