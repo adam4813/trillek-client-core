@@ -25,6 +25,7 @@ void TrillekGame::Initialize() {
     close_window = false;
     engine_sys.reset(new MetaEngineSystem);
 }
+std::mutex TrillekGame::transforms_lock;
 std::unique_ptr<TrillekScheduler> TrillekGame::scheduler;
 std::unique_ptr<FakeSystem> TrillekGame::fake_system;
 std::unique_ptr<physics::PhysicsSystem> TrillekGame::phys_sys;

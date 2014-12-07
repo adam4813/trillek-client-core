@@ -129,7 +129,10 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
     }
 
     // Publish the new updated transforms map
-    Commit<Component::GraphicTransform>(timepoint);
+    {
+        std::lock_guard<std::mutex> tslock(TrillekGame::transforms_lock);
+        Commit<Component::GraphicTransform>(timepoint);
+    }
 }
 
 void PhysicsSystem::AddDynamicComponent(const unsigned int entity_id, std::shared_ptr<Container> component) {

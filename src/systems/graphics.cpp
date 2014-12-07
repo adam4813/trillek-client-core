@@ -26,7 +26,11 @@ RenderSystem::RenderSystem()
     this->frame_drop = false;
     this->current_ref = 1;
     this->camera_id = 0;
-    this->rem_textures.reset(new std::list<std::shared_ptr<Texture>>());
+    this->debugmode = 0;
+    this->window_height = 480;
+    this->window_width = 640;
+    this->frame_drop_count = 0;
+    this->transformsvalid = false;
     this->gui_interface.reset(new RenderSystem::GuiRenderInterface(this));
 
     Shader::InitializeTypes();
@@ -67,7 +71,11 @@ const int* RenderSystem::Start(const unsigned int width, const unsigned int heig
     component::OnTrue(component::Bitmap<component::Component::GameTransform>(),
         [&](id_t entity_id) {
             auto cp = component::Get<component::Component::GameTransform>(entity_id);
+            glm::mat4 model_matrix = glm::translate(cp.GetTranslation()) *
+                glm::mat4_cast(cp.GetOrientation()) *
+                glm::scale(cp.GetScale());
             component::Insert<component::Component::GraphicTransform>(entity_id, std::move(cp));
+            this->model_matrices[entity_id] = std::move(model_matrix);
             LOGMSGC(INFO) << "Copying transform of entity " << entity_id;
         }
     );
@@ -329,7 +337,7 @@ void RenderSystem::RenderScene() const {
             (*texitem)->Update();
             if(!(*texitem)->IsDynamic()) {
                 // remove if static or expired
-                rem_textures->push_back(*texitem);
+                rem_textures.push_back(*texitem);
             }
         }
         for(auto& cmditem : activerender->render_commands) {
@@ -597,6 +605,7 @@ void RenderSystem::RenderGUI() const {
 }
 
 void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_matrix) const {
+    if(!transformsvalid) return;
     for (auto matgrp : this->material_groups) {
         const auto& shader = matgrp.material.GetShader();
         shader->Use();
@@ -645,6 +654,7 @@ void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_m
 void RenderSystem::RenderDepthOnlyPass(const float *view_matrix, const float *proj_matrix) const {
     // Similar to color pass but without textures and everything uses a depth shader
     // This is intended for shadow map passes or the like
+    if(!transformsvalid) return;
     if(!depthpassshader) {
         return;
     }
@@ -657,7 +667,9 @@ void RenderSystem::RenderDepthOnlyPass(const float *view_matrix, const float *pr
     auto lightitr = this->alllights.begin();
     LightBase *light = lightitr->second.get();
     if(light == nullptr) return;
-    const glm::mat4x4& lightmat = this->model_matrices.at(lightitr->first);
+    auto ltiter = this->model_matrices.find(lightitr->first);
+    if(ltiter == this->model_matrices.end()) return;
+    const glm::mat4x4& lightmat = ltiter->second;
     glm::vec3 lightpos = glm::vec3(lightmat[3][0], lightmat[3][1], lightmat[3][2]);
     glm::vec4 lightdir = glm::mat3x4(lightmat) * glm::vec3(0.f, 0.f, -1.f);
     glm::mat4x4 light_matrix =
@@ -705,7 +717,7 @@ void RenderSystem::RenderDepthOnlyPass(const float *view_matrix, const float *pr
 }
 
 void RenderSystem::RenderLightingPass(const glm::mat4x4 &view_matrix, const float *inv_proj_matrix) const {
-    //glBindVertexArray(screenquad.vao); CheckGLError();
+    if(!transformsvalid) return;
     screen_quad.Bind();
     GLint l_pos_loc = 0;
     GLint l_dir_loc = 0;
@@ -736,11 +748,12 @@ void RenderSystem::RenderLightingPass(const glm::mat4x4 &view_matrix, const floa
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
     for (auto& clight : this->alllights) {
-        if(clight.second && clight.second->enabled) {
+        auto ltiter = this->model_matrices.find(clight.first);
+        if(clight.second && clight.second->enabled && ltiter != this->model_matrices.end()) {
             LightBase *activelight = clight.second.get();
             std::shared_ptr<Texture> shadowbuf;
             GLint useshadow = 0;
-            const glm::mat4& lightmat = this->model_matrices.at(clight.first);
+            const glm::mat4& lightmat = ltiter->second;
             glm::vec4 lightpos = view_matrix * glm::vec4(lightmat[3][0], lightmat[3][1], lightmat[3][2], 1);
             glm::vec4 lightdir = glm::mat3x4(lightmat) * glm::vec3(0.f, 0.f, -1.f);
             if(l_pos_loc > 0) glUniform3f(l_pos_loc, lightpos.x, lightpos.y, lightpos.z);
@@ -790,32 +803,40 @@ void RenderSystem::RenderLightingPass(const glm::mat4x4 &view_matrix, const floa
 }
 
 inline void RenderSystem::UpdateModelMatrices(const frame_tp& timepoint) {
-    auto& transform_container = TrillekGame::GetSharedComponent()
-                                                .Map<Component::GraphicTransform>();
-    // since the data is published by the same thread, get the last published data
-    // first remove the transforms
-    auto& transform_map_neg = transform_container.GetLastNegativeCommit();
-    for (const auto& transform : transform_map_neg) {
-        this->model_matrices.erase(transform.first);
+    auto& transform_container =
+        TrillekGame::GetSharedComponent().Map<Component::GraphicTransform>();
+    frame_tp rtp;
+    static frame_tp ltp;
+    rtp = ltp;
+    std::unique_lock<std::mutex> tslock(TrillekGame::transforms_lock, std::defer_lock);
+    if( !tslock.try_lock() ) {
+        return;
     }
-    // second add the new ones
-    auto& transform_map_pos = transform_container.GetLastPositiveCommit();
-    // for each frame
-    for (const auto& transform_el : transform_map_pos) {
+    auto hist = transform_container.Pull(timepoint, rtp);
+    int i;
+
+    auto& transform_map_head = transform_container.GetLastPositiveCommit();
+
+    transformsvalid = true;
+    for (const auto& transform_el : transform_map_head) {
         // for each modified transform in the frame
         const auto id = transform_el.first;
-        const auto& transform = *component::Get<Component::GraphicTransform>(transform_el.second);
+        const auto& transform =
+            *component::Get<Component::GraphicTransform>(transform_el.second);
         glm::mat4 model_matrix = glm::translate(transform.GetTranslation()) *
             glm::mat4_cast(transform.GetOrientation()) *
             glm::scale(transform.GetScale());
         this->model_matrices[id] = std::move(model_matrix);
+        if(this->GetActiveCameraID() == id) {
+            try {
+                this->camera->UpdateTransform(component::Get<Component::GraphicTransform>(transform_el.second));
+                this->vp_center.view_matrix = this->camera->GetViewMatrix();
+            } catch(std::exception& e) {
+                LOGMSGC(ERROR) << "Exception: " << e.what();
+            }
+        }
     }
-    // Update the view matrix if necessary
-    if (transform_map_pos.count(this->GetActiveCameraID())) {
-        auto camera_transform = component::GetConstSharedPtr<Component::GraphicTransform>(this->GetActiveCameraID());
-        this->camera->UpdateTransform(std::move(camera_transform));
-        this->vp_center.view_matrix = this->camera->GetViewMatrix();
-    }
+
 }
 
 void RenderSystem::RenderPostPass(std::shared_ptr<Shader> postshader) const {
@@ -1099,11 +1120,11 @@ void RenderSystem::HandleEvents(frame_tp timepoint) {
         gui_interface->CheckReload();
     }
     last_tp = now;
-    auto tex = this->rem_textures->begin();
-    for(;tex != this->rem_textures->end(); tex++) {
+    auto tex = this->rem_textures.begin();
+    for(;tex != this->rem_textures.end(); tex++) {
         this->dyn_textures.remove(*tex);
     }
-    this->rem_textures->clear();
+    this->rem_textures.clear();
     for (auto& ren : this->renderables) {
         if (ren.second->GetAnimation()) {
             ren.second->GetAnimation()->UpdateAnimation(delta * 1E-9);

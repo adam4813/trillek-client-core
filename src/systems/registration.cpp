@@ -66,7 +66,6 @@ void ComponentFactory::RegisterTypes() {
     RegisterComponentType(ComponentAdder<SYSTEM,Component::ReferenceFrame,id_t>(system_value));
     RegisterComponentType(ComponentAdder<SYSTEM,Component::IsReferenceFrame,bool>(system_value));
     RegisterComponentType(ComponentAdder<SYSTEM,Component::CombinedVelocity>(system));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::ReferenceFrame,id_t>(system_value));
     RegisterComponentType(ComponentAdder<SYSTEM,Component::OxygenRate,float>(system_value));
     RegisterComponentType(ComponentAdder<SYSTEM,Component::Health,uint32_t>(system_value));
     RegisterComponentType(ComponentAdder<SHARED,Component::GraphicTransform,bool>(shared));

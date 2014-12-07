@@ -88,6 +88,7 @@ void Texture::Load(const resource::PixelBuffer & image) {
         return;
     }
     GLint magfilter = GL_LINEAR;
+    GLint wrapmode = GL_REPEAT;
     for(auto &metaprop : image.meta) {
         if(metaprop.GetName() == "mag-filter") {
             if(metaprop.Is<std::string>()) {
@@ -97,11 +98,24 @@ void Texture::Load(const resource::PixelBuffer & image) {
                 }
             }
         }
+        else if(metaprop.GetName() == "wrap") {
+            if(metaprop.Is<std::string>()) {
+                std::string wmode = metaprop.Get<std::string>();
+                if(wmode == "clamp") {
+                    wrapmode = GL_CLAMP_TO_EDGE;
+                }
+                else if(wmode == "mirrored") {
+                    wrapmode = GL_MIRRORED_REPEAT;
+                }
+            }
+        }
     }
     glBindTexture(GL_TEXTURE_2D, texture_id);
     CheckGLError();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magfilter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapmode);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapmode);
     CheckGLError();
     glTexImage2D(GL_TEXTURE_2D, 0, gformat, image.Width(), image.Height(), 0, gformat, GL_UNSIGNED_BYTE, pixdata);
     CheckGLError();

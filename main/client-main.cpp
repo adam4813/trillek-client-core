@@ -25,7 +25,7 @@ int main(int argCount, char **argValues) {
 #if __APPLE__
     os.InitializeWindow(800, 600, "Trillek Client Core", 3, 2);
 #else
-    os.InitializeWindow(800, 600, "Trillek Client Core", 3, 0);
+    os.InitializeWindow(1024, 768, "Trillek Client Core", 3, 0);
 #endif
     glGetError(); // clear errors
 
@@ -58,10 +58,12 @@ int main(int argCount, char **argValues) {
     std::queue<trillek::SystemBase*> systems;
 
     // register the fake system. Comment this to cancel
-//  systems.push(&trillek::TrillekGame::GetFakeSystem());
+//  systems.push((trillek::SystemBase*)&trillek::TrillekGame::GetFakeSystem());
 
-    // register the engine system, i.e graphics + physics
+    // register the engine system, i.e physics + scripts
     systems.push(&trillek::TrillekGame::GetEngineSystem());
+
+    systems.push(&trillek::TrillekGame::GetGraphicSystem());
 
     // register the sound system
     systems.push(&trillek::TrillekGame::GetSoundSystem());
@@ -103,7 +105,7 @@ int main(int argCount, char **argValues) {
     os.Terminate();
 
     // TODO: fix rotation.y for entity 1001 becoming NaN
-    //jparser.Serialize("common/assets/tests/", "transforms.json", trillek::TransformMap::GetInstance());
+    jparser.Serialize("common/assets/tests/", "transforms.json", trillek::TransformMap::GetInstance());
     std::cout << "Number of bytes not freed: " << gAllocatedSize << std::endl;
     return 0;
 }

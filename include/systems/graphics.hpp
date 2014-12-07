@@ -387,6 +387,7 @@ private:
     int gl_version[3];
     int debugmode;
     bool frame_drop;
+    bool transformsvalid;
     uint32_t frame_drop_count;
     ViewMatrixSet vp_center;
     ViewMatrixSet vp_left;
@@ -411,7 +412,7 @@ private:
     // A list of all dynamic textures in the system
     std::list<std::shared_ptr<Texture>> dyn_textures;
     // A list of all textures that need to be removed from dyn_textures
-    std::unique_ptr<std::list<std::shared_ptr<Texture>>> rem_textures;
+    mutable std::list<std::shared_ptr<Texture>> rem_textures;
 
     // map IDs to cameras
     std::map<id_t, std::shared_ptr<CameraBase>> cameras;

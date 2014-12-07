@@ -133,6 +133,7 @@ public:
      */
     static MetaEngineSystem& GetEngineSystem() { return *engine_sys.get(); };
 
+    static std::mutex transforms_lock;
 private:
 
     static std::unique_ptr<TrillekScheduler> scheduler;
