@@ -11,7 +11,8 @@ namespace graphics {
 
 class Texture final : public GraphicsBase {
 public:
-    Texture() : texture_id(0), gformat(GL_RED), compare(false), dynamic(false) {}
+    Texture() : texture_id(0), gformat(GL_RED), compare(false),
+        dynamic(false), genmip(false) {}
     ~Texture();
 
     // required to implement
@@ -108,6 +109,7 @@ protected:
     GLenum gformat;
     bool compare;
     bool dynamic;
+    bool genmip;
     std::weak_ptr<resource::PixelBuffer> source_ptr;
 };
 
