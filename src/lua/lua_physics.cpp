@@ -6,9 +6,11 @@
 #include "lua/lua_velocity.hpp"
 
 #include "components/shared-component.hpp"
+#include "components/system-component-value.hpp"
 #include "systems/physics.hpp"
 #include "transform.hpp"
 #include "trillek-game.hpp"
+#include "logging.hpp"
 
 namespace trillek {
 namespace script {
@@ -18,6 +20,17 @@ int Physics_get(lua_State* L) {
     return 1;
 }
 
+int SetMovable(lua_State* L) {
+    auto physSys = luaW_check<physics::PhysicsSystem>(L, 1);
+    int entity_id = luaL_checkint(L, 2);
+    int b = lua_toboolean(L, 3);
+    LOGMSG(INFO) << entity_id << " Movable " << b;
+    auto v_ptr = component::Create<component::Component::Movable>((b != 0));
+    physSys->AddCommand(entity_id, std::move(v_ptr));
+
+    return 0;
+}
+
 int SetVelocity(lua_State* L) {
     auto physSys = luaW_check<physics::PhysicsSystem>(L, 1);
     int entity_id = luaL_checkint(L, 2);
@@ -25,7 +38,7 @@ int SetVelocity(lua_State* L) {
     auto player_orientation = component::Get<component::Component::GraphicTransform>(entity_id).GetOrientation();
     auto camera_orientation = glm::toMat4(std::move(player_orientation));
     physics::VelocityStruct g(camera_orientation * f.linear, camera_orientation * f.angular);
-    auto v_ptr = component::Create<component::Component::Velocity>(std::move(g));
+    std::shared_ptr<component::Container> v_ptr = component::Create<component::Component::Velocity>(std::move(g));
     physSys->AddCommand(entity_id, std::move(v_ptr));
 
     return 0;
@@ -54,6 +67,7 @@ static luaL_Reg Physics_table[] =
 static luaL_Reg Physics_metatable[] =
 {
     { "set_velocity", SetVelocity },
+    { "set_movable", SetMovable },
     { "set_gravity", SetGravity },
     { nullptr, nullptr } // table end marker
 };

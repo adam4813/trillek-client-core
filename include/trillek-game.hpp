@@ -38,6 +38,7 @@ public:
     TrillekGame();
     ~TrillekGame();
     void Initialize();
+    void Terminate();
 
     /** \brief Return the scheduler
      *

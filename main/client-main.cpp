@@ -105,8 +105,8 @@ int main(int argCount, char **argValues) {
     os.MakeCurrent();
     os.Terminate();
 
-    // TODO: fix rotation.y for entity 1001 becoming NaN
-    jparser.Serialize("common/assets/tests/", "transforms.json", trillek::TransformMap::GetInstance());
+    //jparser.Serialize("common/assets/tests/", "transforms.json", trillek::TransformMap::GetInstance());
+    trillek::game.Terminate();
     std::cout << "Number of bytes not freed: " << gAllocatedSize << std::endl;
     return 0;
 }

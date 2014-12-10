@@ -19,7 +19,10 @@ GuiSystem::GuiSystem(OS &sys, graphics::RenderSystem &gsys)
     instance_id = 0;
 }
 GuiSystem::~GuiSystem() {
-    main_context.reset(nullptr);
+    main_context->UnloadAllDocuments();
+    main_context.reset();
+    CleanUpObjects();
+    event_listeners.clear();
     Rocket::Core::Shutdown();
 }
 
@@ -160,7 +163,7 @@ Rocket::Core::EventListener* GuiSystem::GuiInstancer::InstanceEventListener(
 }
 
 void GuiSystem::GuiInstancer::Release() {
-    //LOGMSGC(DEBUG_FINE) << "Unregister event instancer";
+    LOGMSGC(DEBUG_FINE) << "Unregister event instancer";
 }
 
 GuiSystem::GuiEventListener::GuiEventListener(GuiSystem &u, uint32_t sid, uint32_t id)
@@ -171,7 +174,7 @@ GuiSystem::GuiEventListener::GuiEventListener(GuiSystem &u, uint32_t sid, uint32
 }
 
 GuiSystem::GuiEventListener::~GuiEventListener() {
-    //LOGMSGC(DEBUG_FINE) << "~GuiEventListener()";
+    LOGMSGC(DEBUG_FINE) << "~GuiEventListener()";
     auto sys_itr = gs.handlers.find(system_id);
     if(sys_itr != gs.handlers.end()) {
         sys_itr->second->RemoveUIEvent(instance_id);
@@ -191,12 +194,12 @@ void GuiSystem::GuiEventListener::ProcessEvent(Rocket::Core::Event& event) {
 }
 
 void GuiSystem::GuiEventListener::OnAttach(Rocket::Core::Element* elem) {
-    //LOGMSGC(DEBUG_FINE) << "GuiEventListener-Attach " << ((uint32_t)elem);
+    LOGMSGC(DEBUG_FINE) << "GuiEventListener-Attach " << ((uint32_t)elem);
     attachcount++;
 }
 
 void GuiSystem::GuiEventListener::OnDetach(Rocket::Core::Element* elem) {
-    //LOGMSGC(DEBUG_FINE) << "GuiEventListener-Detach " << ((uint32_t)elem);
+    LOGMSGC(DEBUG_FINE) << "GuiEventListener-Detach " << ((uint32_t)elem);
     attachcount--;
 }
 
@@ -343,12 +346,12 @@ Rocket::Core::Element* GuiSystem::GuiDocumentInstancer::InstanceElement(
 
 void GuiSystem::GuiDocumentInstancer::ReleaseElement(Rocket::Core::Element* element) {
     delete element;
-    //LOGMSGC(DEBUG_FINE) << "DocInstancer - Release Element " << ((uint32_t)element);
+    LOGMSGC(DEBUG_FINE) << "DocInstancer - Release Element " << ((uint32_t)element);
     gs.CleanUpObjects();
 }
 
 void GuiSystem::GuiDocumentInstancer::Release() {
-    //LOGMSGC(DEBUG_FINE) << "DocInstancer - Release System";
+    LOGMSGC(DEBUG_FINE) << "DocInstancer - Release System";
 }
 
 } // namespace gui

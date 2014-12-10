@@ -22,6 +22,20 @@ TrillekGame::TrillekGame() {
 }
 TrillekGame::~TrillekGame() {}
 
+void TrillekGame::Terminate() {
+    engine_sys.reset();
+    gui_system.reset();
+    lua_sys.reset();
+    gl_sys_ptr.reset();
+    fake_system.reset();
+    glfw_os.reset();
+    shared_component.reset();
+    system_component.reset();
+    system_value_component.reset();
+    phys_sys.reset();
+    scheduler.reset();
+}
+
 void TrillekGame::Initialize() {
     scheduler.reset(new TrillekScheduler);
     fake_system.reset(new FakeSystem);

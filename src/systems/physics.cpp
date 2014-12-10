@@ -22,7 +22,7 @@ void PhysicsSystem::Start() {
     this->broadphase = new btDbvtBroadphase();
     this->solver = new btSequentialImpulseConstraintSolver();
     this->dynamicsWorld = new btDiscreteDynamicsWorld(this->dispatcher, this->broadphase, this->solver, this->collisionConfiguration);
-    this->dynamicsWorld->setGravity(btVector3(0, -10, 0));
+    this->dynamicsWorld->setGravity(btVector3(0, -6.7, 0));
 
     // Register the collision dispatcher with the GImpact algorithm for dynamic meshes.
     btCollisionDispatcher * dispatcher = static_cast<btCollisionDispatcher *>(this->dynamicsWorld->getDispatcher());
@@ -33,7 +33,7 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
     // Execute the commands
     auto iterator_pair = this->usercommands.GetAndTagCommandsFrom(timepoint);
     for (auto& v = iterator_pair.first; v != iterator_pair.second; ++v) {
-        usercommand::Execute(std::move(v->second.first), std::move(v->second.second));
+        usercommand::Execute(v->second.first, std::move(v->second.second));
     }
     // commit velocity updates
     Commit<Component::Velocity>(timepoint);
@@ -54,7 +54,7 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
             auto& body = *Get<Component::Collidable>(entity_id).GetRigidBody();
             const auto& v = Get<Component::Velocity>(entity_id);
 
-            body.setLinearVelocity(v.GetLinear() + body.getGravity());
+            body.applyCentralImpulse(v.GetLinear());
             body.setAngularVelocity(v.GetAngular());
         }
     );
@@ -74,6 +74,23 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
             auto combined_a = transform * v.GetAngular();
             combined_a += ref_v.GetAngular();
             body.setAngularVelocity(combined_a);
+        }
+    );
+
+    OnTrue(Bitmap<Component::Movable>() & Bitmap<Component::ReferenceFrame>(),
+        [](id_t entity_id) {
+            if(!Get<Component::Movable>(entity_id)) return;
+            auto reference_id = Get<Component::ReferenceFrame>(entity_id);
+            auto& body = *Get<Component::Collidable>(entity_id).GetRigidBody();
+            auto& rbody = *Get<Component::Collidable>(reference_id).GetRigidBody();
+            auto& reftransform = rbody.getWorldTransform();
+            auto npq = reftransform * btQuaternion(0,0,0,1.);
+            auto npl = reftransform * btVector3(0,0,-1.5);
+            npl.setX(((long)(npl.x() * 20.0)) * 0.05);
+            npl.setY(((long)(npl.y() * 20.0)) * 0.05);
+            npl.setZ(((long)(npl.z() * 20.0)) * 0.05);
+            auto ts = btTransform(btQuaternion(0,0,0,1.), npl);
+            body.setWorldTransform(ts);
         }
     );
 
@@ -117,14 +134,16 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
     // Set out transform updates.
     auto& bodymap = game.GetSystemComponent().Map<Component::Collidable>();
     for (auto& shape : bodymap) {
-        btTransform transform;
-        Get<Component::Collidable>(shape.second)->GetRigidBody()->getMotionState()->getWorldTransform(transform);
+        btTransform transform =
+            Get<Component::Collidable>(shape.second)->GetRigidBody()->getWorldTransform();
 
         auto pos = transform.getOrigin();
+        glm::vec3 vpos = glm::vec3(pos.x(), pos.y(), pos.z());
         auto rot = transform.getRotation();
+        glm::quat vori = glm::quat(rot.w(), rot.x(), rot.y(), rot.z());
         GraphicTransform_type entity_transform(Get<Component::GraphicTransform>(shape.first));
-        entity_transform.SetTranslation(glm::vec3(pos.x(), pos.y(), pos.z()));
-        entity_transform.SetOrientation(glm::quat(rot.w(), rot.x(), rot.y(), rot.z()));
+        entity_transform.SetTranslation(vpos);
+        entity_transform.SetOrientation(vori);
         Update<Component::GraphicTransform>(shape.first, std::move(entity_transform));
     }
 

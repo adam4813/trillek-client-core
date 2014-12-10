@@ -89,10 +89,10 @@ public:
     class GuiEventListener : public Rocket::Core::EventListener {
     public:
         GuiEventListener(GuiSystem &u, uint32_t sid, uint32_t id);
-        virtual ~GuiEventListener();
-        virtual void ProcessEvent(Rocket::Core::Event& event);
-        virtual void OnAttach(Rocket::Core::Element*);
-        virtual void OnDetach(Rocket::Core::Element*);
+        ~GuiEventListener();
+        void ProcessEvent(Rocket::Core::Event& event);
+        void OnAttach(Rocket::Core::Element*);
+        void OnDetach(Rocket::Core::Element*);
         int32_t GetAttachCount() { return attachcount; }
     private:
         int32_t attachcount;

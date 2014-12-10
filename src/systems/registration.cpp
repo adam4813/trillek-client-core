@@ -69,6 +69,7 @@ void ComponentFactory::RegisterTypes() {
     RegisterComponentType(ComponentAdder<SYSTEM,Component::CombinedVelocity>(system));
     RegisterComponentType(ComponentAdder<SYSTEM,Component::OxygenRate,float>(system_value));
     RegisterComponentType(ComponentAdder<SYSTEM,Component::Health,uint32_t>(system_value));
+    RegisterComponentType(ComponentAdder<SYSTEM,Component::Movable,bool>(system_value));
     RegisterComponentType(ComponentAdder<SHARED,Component::GraphicTransform,bool>(shared));
     RegisterComponentType(ComponentAdder<SHARED,Component::GameTransform,bool>(shared));
     RegisterComponentType<graphics::Renderable>();
