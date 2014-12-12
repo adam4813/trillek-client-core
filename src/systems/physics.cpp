@@ -13,7 +13,9 @@ namespace trillek { namespace physics {
 
 using namespace component;
 
-PhysicsSystem::PhysicsSystem() { }
+PhysicsSystem::PhysicsSystem() {
+    last_rayvalid = false;
+}
 PhysicsSystem::~PhysicsSystem() { }
 
 void PhysicsSystem::Start() {
@@ -77,18 +79,22 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
         }
     );
 
-    OnTrue(Bitmap<Component::Movable>() & Bitmap<Component::ReferenceFrame>(),
-        [](id_t entity_id) {
-            if(!Get<Component::Movable>(entity_id)) return;
-            auto reference_id = Get<Component::ReferenceFrame>(entity_id);
+    id_t cam = game.GetCameraEntity();
+    OnTrue(Bitmap<Component::Moving>(),
+        [&](id_t entity_id) {
             auto& body = *Get<Component::Collidable>(entity_id).GetRigidBody();
-            auto& rbody = *Get<Component::Collidable>(reference_id).GetRigidBody();
+            auto& rbody = *Get<Component::Collidable>(cam).GetRigidBody();
             auto& reftransform = rbody.getWorldTransform();
             auto npq = reftransform * btQuaternion(0,0,0,1.);
             auto npl = reftransform * btVector3(0,0,-1.5);
-            npl.setX(((long)(npl.x() * 20.0)) * 0.05);
-            npl.setY(((long)(npl.y() * 20.0)) * 0.05);
-            npl.setZ(((long)(npl.z() * 20.0)) * 0.05);
+            if(last_rayvalid) {
+                npl = last_raypos;
+            }
+            npl = btVector3(
+                ((long)(npl.x() * 20.0)) * 0.05,
+                ((long)(npl.y() * 20.0)) * 0.05,
+                ((long)(npl.z() * 20.0)) * 0.05
+            );
             auto ts = btTransform(btQuaternion(0,0,0,1.), npl);
             body.setWorldTransform(ts);
         }
@@ -152,6 +158,94 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
         std::lock_guard<std::mutex> tslock(game.transforms_lock);
         Commit<Component::GraphicTransform>(timepoint);
     }
+}
+
+id_t PhysicsSystem::RayCast() {
+    id_t cam = game.GetCameraEntity();
+    last_rayvalid = false;
+    if(!Has<Component::GraphicTransform>(cam)) {
+        return 0;
+    }
+    auto& ctransform = Get<Component::GraphicTransform>(cam);
+    auto q = ctransform.GetOrientation();
+    auto orig = ctransform.GetTranslation();
+    auto fv = orig + glm::rotate(q, FORWARD_VECTOR * 300.f);
+    btVector3 from(orig.x, orig.y, orig.z), to(fv.x, fv.y, fv.z);
+    last_rayfrom = from;
+    btDynamicsWorld::AllHitsRayResultCallback cr(from, to);
+    this->dynamicsWorld->rayTest(from, to, cr);
+    if(cr.hasHit()) {
+        int mx = cr.m_collisionObjects.size();
+        double lastfrac = 1.1;
+        int hc = mx;
+        id_t entity_hit = 0;
+        for(int i = 0; i < mx; i++) {
+            id_t entity = 0;
+            double frc = cr.m_hitFractions.at(i);
+            const Collidable* coll = (const Collidable*)cr.m_collisionObjects.at(i)->getUserPointer();
+            if(!coll) continue;
+            entity = coll->GetEntityID();
+            if(entity && entity != cam) {
+                if(frc < lastfrac) {
+                    entity_hit = entity;
+                    hc = i;
+                    lastfrac = frc;
+                }
+            }
+        }
+        if(hc < mx) {
+            last_raypos = cr.m_hitPointWorld.at(hc);
+            last_raynorm = cr.m_hitNormalWorld.at(hc);
+            last_raydist = last_rayfrom.distance(last_raypos);
+            last_rayvalid = true;
+            return entity_hit;
+        }
+    }
+    return 0;
+}
+
+id_t PhysicsSystem::RayCastIgnore(id_t ign) {
+    id_t cam = game.GetCameraEntity();
+    last_rayvalid = false;
+    if(!Has<Component::GraphicTransform>(cam)) {
+        return 0;
+    }
+    auto& ctransform = Get<Component::GraphicTransform>(cam);
+    auto q = ctransform.GetOrientation();
+    auto orig = ctransform.GetTranslation();
+    auto fv = orig + glm::rotate(q, FORWARD_VECTOR * 300.f);
+    btVector3 from(orig.x, orig.y, orig.z), to(fv.x, fv.y, fv.z);
+    last_rayfrom = from;
+    btDynamicsWorld::AllHitsRayResultCallback cr(from, to);
+    this->dynamicsWorld->rayTest(from, to, cr);
+    if(cr.hasHit()) {
+        int mx = cr.m_collisionObjects.size();
+        double lastfrac = 1.1;
+        int hc = mx;
+        id_t entity_hit = 0;
+        for(int i = 0; i < mx; i++) {
+            id_t entity = 0;
+            double frc = cr.m_hitFractions.at(i);
+            const Collidable* coll = (const Collidable*)cr.m_collisionObjects.at(i)->getUserPointer();
+            if(!coll) continue;
+            entity = coll->GetEntityID();
+            if(entity && entity != cam && entity != ign) {
+                if(frc < lastfrac) {
+                    entity_hit = entity;
+                    hc = i;
+                    lastfrac = frc;
+                }
+            }
+        }
+        if(hc < mx) {
+            last_raypos = cr.m_hitPointWorld.at(hc);
+            last_raynorm = cr.m_hitNormalWorld.at(hc);
+            last_raydist = last_rayfrom.distance(last_raypos);
+            last_rayvalid = true;
+            return entity_hit;
+        }
+    }
+    return 0;
 }
 
 void PhysicsSystem::AddDynamicComponent(const unsigned int entity_id, std::shared_ptr<Container> component) {

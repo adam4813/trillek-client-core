@@ -114,18 +114,35 @@ public:
      */
     void SetNormalGravity(const unsigned int entity_id);
 
+    id_t RayCast();
+    id_t RayCastIgnore(id_t);
+    glm::vec3 GetLastRayPos() const {
+        btVector3 tmp = last_raypos; // grab a copy
+        return glm::vec3(tmp.getX(), tmp.getY(), tmp.getZ());
+    }
+    double GetLastRayDistance() const {
+        return last_raydist;
+    }
+    void RaySetInvalid() {
+        last_rayvalid = false;
+    }
 private:
 
     btBroadphaseInterface* broadphase;
-    btDefaultCollisionConfiguration* collisionConfiguration;
+    btCollisionConfiguration* collisionConfiguration;
     btCollisionDispatcher* dispatcher;
     btSequentialImpulseConstraintSolver* solver;
-    btDiscreteDynamicsWorld* dynamicsWorld;
+    btDynamicsWorld* dynamicsWorld;
+    btVector3 last_rayfrom;
+    double last_raydist;
+    btVector3 last_raypos;
+    btVector3 last_raynorm;
+    bool last_rayvalid;
 
     UserCommandQueue usercommands;
 
     btCollisionShape* groundShape;
-    btDefaultMotionState* groundMotionState;
+    btMotionState* groundMotionState;
     btRigidBody* groundRigidBody;
 
     frame_tp delta; // The time since the last HandleEvents was called.

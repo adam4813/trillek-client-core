@@ -152,7 +152,7 @@ void LuaSystem::HandleEvents(frame_tp timepoint) {
         // Call the registered update functions in Lua.
         evh_itr = this->event_handlers.find(1);
         if (evh_itr != this->event_handlers.end()) {
-            this->Lm.lock();
+            std::unique_lock<std::mutex> locker(Lm);
             for(auto& handler : evh_itr->second) {
                 lua_getglobal(L, handler.c_str());
                 lua_pushnumber(L, delta * 1.0E-9);
@@ -162,7 +162,6 @@ void LuaSystem::HandleEvents(frame_tp timepoint) {
                     LOGMSG(ERROR) << cs;
                 }
             }
-            this->Lm.unlock();
         }
     }
 }
@@ -173,30 +172,28 @@ void LuaSystem::Terminate() {
 }
 
 void LuaSystem::AddUIEventType(uint32_t event_id, const std::string& event_class, const std::string& event_value) {
-    Lm.lock();
+    std::unique_lock<std::mutex> locker(Lm);
     lua_getglobal(L, "_UI");
     int s = lua_gettop(L);
     lua_pushinteger(L, event_id);
     luaL_loadstring(L, event_value.c_str());
     lua_settable(L, s);
     lua_pop(L, 1);
-    Lm.unlock();
 }
 
 void LuaSystem::RemoveUIEvent(uint32_t event_id) {
     if(!L) return;
-    Lm.lock();
+    std::unique_lock<std::mutex> locker(Lm);
     lua_getglobal(L, "_UI");
     int s = lua_gettop(L);
     lua_pushinteger(L, event_id);
     lua_pushnil(L);
     lua_settable(L, s);
     lua_pop(L, 1);
-    Lm.unlock();
 }
 
 void LuaSystem::UINotify(uint32_t event_id, const std::string& element_id) {
-    Lm.lock();
+    std::unique_lock<std::mutex> locker(Lm);
     lua_getglobal(L, "_UI");
     int s = lua_gettop(L);
     lua_pushinteger(L, event_id);
@@ -206,25 +203,21 @@ void LuaSystem::UINotify(uint32_t event_id, const std::string& element_id) {
         lua_pcall(L, 1, 0, 0);
     }
     lua_pop(L, 1);
-    Lm.unlock();
 }
 
 void LuaSystem::Notify(const KeyboardEvent* key_event) {
-    Lm.lock();
+    std::unique_lock<std::mutex> locker(Lm);
     event_key.push_back(*key_event);
-    Lm.unlock();
 }
 
 void LuaSystem::Notify(const MouseBtnEvent* mousebtn_event) {
-    Lm.lock();
+    std::unique_lock<std::mutex> locker(Lm);
     event_mbtn.push_back(*mousebtn_event);
-    Lm.unlock();
 }
 
 void LuaSystem::Notify(const MouseMoveEvent* mousemove_event) {
-    Lm.lock();
+    std::unique_lock<std::mutex> locker(Lm);
     event_mmove.push_back(*mousemove_event);
-    Lm.unlock();
 }
 
 } // End of script

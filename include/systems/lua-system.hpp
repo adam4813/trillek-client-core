@@ -136,7 +136,7 @@ private:
     std::list<MouseBtnEvent> event_mbtn;
     std::list<MouseMoveEvent> event_mmove;
     lua_State* L;
-    std::mutex Lm;
+    mutable std::mutex Lm;
     long long delta; // The time since the last HandleEvents was called.
     std::map<int, std::list<std::string>> event_handlers; // Mapping of event ID to script function.
 };
