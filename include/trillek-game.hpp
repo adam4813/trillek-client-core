@@ -122,6 +122,8 @@ public:
      */
     graphics::RenderSystem& GetGraphicSystem();
 
+    id_t GetCameraEntity();
+
     /** \brief Return the graphic system instance pointer
      *
      * \return std::shared_ptr<graphics::RenderSystem> the instance

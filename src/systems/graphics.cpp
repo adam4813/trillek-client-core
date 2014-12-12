@@ -613,14 +613,19 @@ void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_m
         glUniformMatrix4fv((*shader)("view"), 1, GL_FALSE, view_matrix);
         glUniformMatrix4fv((*shader)("projection"), 1, GL_FALSE, proj_matrix);
         GLint u_model_loc = shader->Uniform("model");
+        GLint u_istex_loc = shader->Uniform("textured");
         GLint u_animatrix_loc = shader->Uniform("animation_matrix");
         GLint u_animate_loc = shader->Uniform("animated");
 
         for (const auto& texgrp : matgrp.texture_groups) {
             // Activate all textures for this texture group.
+            bool hastex = false;
             for (size_t tex_index = 0; tex_index < texgrp.texture_indicies.size(); ++tex_index) {
-                matgrp.material.ActivateTexture(texgrp.texture_indicies[tex_index], tex_index);
+                if(matgrp.material.ActivateTexture(texgrp.texture_indicies[tex_index], tex_index)) {
+                    hastex = true;
+                }
             }
+            glUniform1i(u_istex_loc, hastex ? 1 : 0);
 
             // Loop through each renderable group.
             for (const auto& rengrp : texgrp.renderable_groups) {

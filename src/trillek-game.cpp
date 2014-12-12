@@ -60,6 +60,10 @@ graphics::RenderSystem& TrillekGame::GetGraphicSystem() {
     return *gl_sys_ptr.get();
 }
 
+id_t TrillekGame::GetCameraEntity() {
+    return gl_sys_ptr->GetActiveCameraID();
+}
+
 gui::GuiSystem& TrillekGame::GetGUISystem() {
     return *gui_system.get();
 }

@@ -2,7 +2,6 @@
 #include "components/shared-component.hpp"
 #include "systems/transform-system.hpp"
 #include "systems/sound-system.hpp"
-#include "systems/graphics.hpp"
 #include "logging.hpp"
 
 namespace trillek {
@@ -120,7 +119,7 @@ void System::HandleEvents(frame_tp timepoint) {
                 Map<component::Component::GraphicTransform>().Pull(timepoint, last_transform_frame);
     for(auto itmap = transform_history.second.cbegin(); itmap != transform_history.second.cend(); ++itmap) {
         auto& transformmap = itmap->second;
-        auto camid = game.GetGraphicSystem().GetActiveCameraID();
+        auto camid = game.GetCameraEntity();
         if( transformmap.count(camid) ) {
             // the camera is moving
             auto& data = *component::Get<component::Component::GraphicTransform>(transformmap.at(camid));

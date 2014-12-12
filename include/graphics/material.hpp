@@ -58,9 +58,9 @@ public:
      *
      * \param size_t index The index of the texture to bind.
      * \param GLuint target Target texture unit to make active.
-     * \return void
+     * \return true if at least one texture is active
      */
-    void ActivateTexture(const size_t index, const GLuint target);
+    bool ActivateTexture(const size_t index, const GLuint target);
 
     /**
      * \brief Deactivates the specified texture unit.
