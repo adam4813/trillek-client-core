@@ -45,29 +45,39 @@ void Renderable::UpdateBufferGroups() {
 
         auto temp_meshgroup = mesh_group.lock();
 
+        size_t texture_index = 0;
+
         // TODO: Loop through all the texture names in the mesh group and add the textures to the material.
         for (std::string texture_name : temp_meshgroup->textures) {
-            std::shared_ptr<Texture> texture = game.GetGraphicSystem().Get<Texture>(texture_name);
-            if (!texture) {
-                std::vector<Property> props;
-                props.push_back(Property("filename", texture_name));
-                std::stringstream name;
-                if (this->dyn_textures) {
-                    name << this->entity_id << "_" << texture_name;
+            if(texture_name.length() > 0) {
+                std::shared_ptr<Texture> texture = game.GetGraphicSystem().Get<Texture>(texture_name);
+                if(texture_index < set_inst_textures.size()) {
+                    if(set_inst_textures[texture_index]) {
+                        std::vector<Property> props;
+                        props.push_back(Property("filename", texture_name));
+                        std::stringstream name;
+                        name << this->entity_id << "%" << texture_index;
+                        auto pixel_data = resource::ResourceMap::Create<resource::PixelBuffer>(name.str(), props);
+                        if(pixel_data) {
+                            inst_textures.push_back(pixel_data);
+                            texture = std::make_shared<Texture>(pixel_data, true);
+                            game.GetGraphicSystem().Add(name.str(), texture);
+                        }
+                    }
                 }
-                else {
-                    name << texture_name;
+                if(!texture) {
+                    std::vector<Property> props;
+                    props.push_back(Property("filename", texture_name));
+                    auto pixel_data = resource::ResourceMap::Create<resource::PixelBuffer>(texture_name, props);
+                    if (pixel_data) {
+                        texture = std::make_shared<Texture>(pixel_data, false);
+                        game.GetGraphicSystem().Add(texture_name, texture);
+                    }
                 }
-
-                auto pixel_data = resource::ResourceMap::Create<resource::PixelBuffer>(name.str(), props);
-                if (pixel_data) {
-                    texture = std::make_shared<Texture>(pixel_data, this->dyn_textures);
-                    game.GetGraphicSystem().Add(name.str(), texture);
+                if(texture) {
+                    buffer_group->textures.push_back(texture);
                 }
-            }
-
-            if (texture) {
-                buffer_group->textures.push_back(texture);
+                texture_index++;
             }
         }
 
@@ -159,7 +169,6 @@ bool Renderable::Initialize(const std::vector<Property> &properties) {
     std::string mesh_name;
     std::string shader_name;
     std::string animation_name;
-    this->dyn_textures = true;
     for (const Property& p : properties) {
         std::string name = p.GetName();
         if (name == "mesh") {
@@ -171,8 +180,8 @@ bool Renderable::Initialize(const std::vector<Property> &properties) {
         else if (name == "animation") {
             animation_name = p.Get<std::string>();
         }
-        else if (name == "dynamic_textures") {
-            this->dyn_textures = p.Get<bool>();
+        else if (name == "instanced_textures") {
+            this->set_inst_textures = p.Get<std::vector<bool>>();
         }
         else if (name == "entity_id") {
             this->entity_id = p.Get<unsigned int>();

@@ -392,10 +392,7 @@ private:
     ViewMatrixSet vp_center;
     ViewMatrixSet vp_left;
     ViewMatrixSet vp_right;
-    //glm::mat4 projection_matrix;
-    //glm::mat4 view_matrix;
     VertexList screen_quad;
-    //BufferTri screenquad; /// the full screen quad, used for much graphics effects
 
     unsigned int window_width; // Store the width of our window
     unsigned int window_height; // Store the height of our window

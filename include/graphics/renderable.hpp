@@ -11,6 +11,7 @@ namespace trillek {
 namespace resource {
 
 class Mesh;
+class PixelBuffer;
 
 } // End of resource
 
@@ -112,6 +113,16 @@ public:
     }
 
     /**
+     * \brief Gets an instance texture.
+     * \return std::shared_ptr<PixelBuffer> The pixel buffer for the texture.
+     */
+    std::shared_ptr<resource::PixelBuffer> GetInstanceTexture(size_t index) const {
+        if(index < inst_textures.size()) {
+            return std::shared_ptr<resource::PixelBuffer>(inst_textures.at(index));
+        }
+        return std::shared_ptr<resource::PixelBuffer>();
+    }
+    /**
      * \brief Initializes the component with the provided properties
      *
      * Valid properties include mesh (the mesh resource name) and shader (the shader resource name).
@@ -128,7 +139,8 @@ private:
 
     std::shared_ptr<Shader> shader;
 
-    bool dyn_textures; // Wether the textures for this renderable should be updated each frame or not.
+    std::vector<bool> set_inst_textures;
+    std::vector<std::shared_ptr<resource::PixelBuffer>> inst_textures;
 
     id_t entity_id;
 };
