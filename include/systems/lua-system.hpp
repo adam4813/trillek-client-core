@@ -5,7 +5,7 @@
 #include <map>
 #include <list>
 
-#include "dispatcher.hpp"
+#include "systems/dispatcher.hpp"
 #include "os-event.hpp"
 #include "trillek.hpp"
 #include "systems/system-base.hpp"
@@ -22,7 +22,7 @@ namespace script {
 
 typedef int (LuaRegisterFunction)(lua_State*);
 
-class LuaSystem : public SystemBase,
+class LuaSystem final : public SystemBase,
     public event::Subscriber<KeyboardEvent>,
     public event::Subscriber<MouseBtnEvent>,
     public event::Subscriber<MouseMoveEvent> {
@@ -43,14 +43,6 @@ public:
      * Updates the state of the system based off how much time has elapsed since the last update.
      */
     void RunBatch() const override { };
-
-    /**
-     * \brief Not used
-
-     * \param const unsigned int entity_id The entity ID the compoennt belongs to.
-     * \param std::shared_ptr<ComponentBase> component The component to add.
-     */
-    void AddComponent(const unsigned int entity_id, std::shared_ptr<ComponentBase> component);
 
     /**
      * \brief Calls a systems's register function with this systems lua_State.
@@ -75,7 +67,7 @@ public:
      * If event handling need some batch processing, a task list must be
      * prepared and stored temporarily to be retrieved by RunBatch().
      */
-    void HandleEvents(const frame_tp& timepoint) override;
+    void HandleEvents(frame_tp timepoint) override;
 
     /** \brief Save the data and terminate the system
      *
@@ -123,7 +115,7 @@ private:
     void RegisterTypes();
 
     lua_State* L;
-    frame_unit delta; // The time since the last HandleEvents was called.
+    long long delta; // The time since the last HandleEvents was called.
     std::map<int, std::list<std::string>> event_handlers; // Mapping of event ID to script function.
 };
 
