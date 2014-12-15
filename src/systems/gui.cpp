@@ -309,6 +309,14 @@ void GuiSystem::LoadFont(const std::string &fname) {
     Rocket::Core::FontDatabase::LoadFontFace(fname.c_str());
 }
 
+Rocket::Core::ElementDocument* GuiSystem::GetDocument(uint32_t id) {
+    auto doc_itr = documents.find(id);
+    if(doc_itr != documents.end()) {
+        return doc_itr->second.get();
+    }
+    return nullptr;
+}
+
 void GuiSystem::Start() {
     Rocket::Core::SetSystemInterface(this);
     Rocket::Core::SetRenderInterface(this->grsystem.GetGUIInterface());

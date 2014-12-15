@@ -23,6 +23,8 @@ namespace trillek {
 namespace script {
 
 std::string lua_tostdstring(lua_State*, int);
+void lua_pushbool(lua_State* L, bool b);
+bool lua_tobool(lua_State* L, int index);
 
 typedef int (LuaRegisterFunction)(lua_State*);
 

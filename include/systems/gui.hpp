@@ -70,6 +70,7 @@ public:
     void AsyncCloseDocument(uint32_t id);
     void HideDocument(uint32_t id);
     void ShowDocument(uint32_t id);
+    Rocket::Core::ElementDocument* GetDocument(uint32_t id);
 
     void RegisterHandler(const std::string& event_type, UIEventHandler* handler);
 

@@ -15,6 +15,13 @@ std::string lua_tostdstring(lua_State* L, int p) {
     return std::string(strc, strl);
 }
 
+void lua_pushbool(lua_State* L, bool b) {
+    lua_pushboolean(L, b?1:0);
+}
+bool lua_tobool(lua_State* L, int index) {
+    return lua_toboolean(L, index) != 0;
+}
+
 int luaopen_Transform(lua_State*);
 int luaopen_LuaSys(lua_State*);
 
