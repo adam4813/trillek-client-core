@@ -78,8 +78,7 @@ int main(int argCount, char **argValues) {
     // Detach the window from the current thread
     os.DetachContext();
 
-    trillek::VComputerSystem cpu1;
-    systems.push(&cpu1);
+    systems.push(&trillek::game.GetVComputerSystem());
 
     // start the scheduler in another thread
     std::thread tp(

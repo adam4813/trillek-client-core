@@ -13,6 +13,7 @@ class TrillekScheduler;
 class MetaEngineSystem;
 class FakeSystem;
 class OS;
+class VComputerSystem;
 
 namespace graphics {
 class RenderSystem;
@@ -116,6 +117,11 @@ public:
      */
     sound::System& GetSoundSystem();
 
+    /** Get the computer system instance
+     * \return reference to the system
+     */
+    VComputerSystem& GetVComputerSystem() { return *vcomputer_system.get(); }
+
     /** \brief Return the graphic system instance
      *
      * \return graphics::System& the instance
@@ -145,6 +151,7 @@ private:
     std::unique_ptr<FakeSystem> fake_system;
     std::unique_ptr<physics::PhysicsSystem> phys_sys;
     std::unique_ptr<OS> glfw_os;
+    std::unique_ptr<VComputerSystem> vcomputer_system;
     std::unique_ptr<component::Shared> shared_component;
     std::unique_ptr<component::System> system_component;
     std::unique_ptr<component::SystemValue> system_value_component;

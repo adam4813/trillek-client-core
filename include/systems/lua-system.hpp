@@ -19,12 +19,31 @@ extern "C"
 #include <lauxlib.h>
 }
 
+#include <luawrapper/luawrapper.hpp>
+#include <luawrapper/luawrapperutil.hpp>
+
+template<>
+struct luaU_Impl<std::string> {
+    static std::string luaU_check(lua_State* L, int index) {
+        unsigned x;
+        const char * cs = lua_tolstring(L, index, &x);
+        return std::string(cs, x);
+    }
+    static std::string luaU_to(lua_State* L, int index) {
+        unsigned x;
+        const char * cs = lua_tolstring(L, index, &x);
+        return std::string(cs, x);
+    }
+    static void luaU_push(lua_State* L, const std::string& val) {
+        lua_pushlstring(L, val.data(), val.length());
+    }
+    static void luaU_push(lua_State* L, std::string& val) {
+        lua_pushlstring(L, val.data(), val.length());
+    }
+};
+
 namespace trillek {
 namespace script {
-
-std::string lua_tostdstring(lua_State*, int);
-void lua_pushbool(lua_State* L, bool b);
-bool lua_tobool(lua_State* L, int index);
 
 typedef int (LuaRegisterFunction)(lua_State*);
 

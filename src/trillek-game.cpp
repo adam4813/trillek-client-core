@@ -9,9 +9,11 @@
 #include "systems/graphics.hpp"
 #include "systems/lua-system.hpp"
 #include "systems/gui.hpp"
+#include "systems/vcomputer-system.hpp"
 #include "components/shared-component.hpp"
 #include "components/system-component.hpp"
 #include "components/system-component-value.hpp"
+#include "interaction.hpp"
 
 namespace trillek {
 
@@ -23,6 +25,7 @@ TrillekGame::TrillekGame() {
 TrillekGame::~TrillekGame() {}
 
 void TrillekGame::Terminate() {
+    vcomputer_system.reset();
     engine_sys.reset();
     gui_system.reset();
     lua_sys.reset();
@@ -37,6 +40,7 @@ void TrillekGame::Terminate() {
 }
 
 void TrillekGame::Initialize() {
+    ActionText::RegisterStatic();
     scheduler.reset(new TrillekScheduler);
     fake_system.reset(new FakeSystem);
     phys_sys.reset(new physics::PhysicsSystem);
@@ -50,6 +54,7 @@ void TrillekGame::Initialize() {
     gui_system.reset(new gui::GuiSystem(*glfw_os.get(), *gl_sys_ptr.get()));
     close_window = false;
     engine_sys.reset(new MetaEngineSystem);
+    vcomputer_system.reset(new VComputerSystem);
 }
 
 sound::System& TrillekGame::GetSoundSystem() {

@@ -38,13 +38,13 @@ GUI_MAKEFN(Get) {
 
 // GuiSystem calls
 GUI_MAKEMFN(load_doc)
-    auto doc = lua_tostdstring(L, 2);
+    auto doc = luaU_to<std::string>(L, 2);
     uint32_t docid = gui->AsyncLoadDocument(doc);
     lua_pushunsigned(L, docid);
     return 1;
 }
 GUI_MAKEMFN(sync_load_doc)
-    auto doc = lua_tostdstring(L, 2);
+    auto doc = luaU_to<std::string>(L, 2);
     uint32_t docid = gui->LoadDocument(doc);
     lua_pushunsigned(L, docid);
     return 1;
@@ -97,7 +97,7 @@ GUI_MAKEMFN(get_doc)
     return 1;
 }
 GUI_MAKEMFN(load_font)
-    auto font = lua_tostdstring(L, 2);
+    auto font = luaU_to<std::string>(L, 2);
     gui->LoadFont(font);
     return 0;
 }
@@ -155,11 +155,11 @@ ELEM_MAKERFN(classNames)
     return 1;
 }
 ELEM_MAKERFN(isClassSet)
-    lua_pushbool(L, elem->IsClassSet(luaU_to<String>(L, 2)));
+    luaU_push(L, elem->IsClassSet(luaU_to<String>(L, 2)));
     return 1;
 }
 ELEM_MAKERFN(visible)
-    lua_pushbool(L, elem->IsVisible());
+    luaU_push(L, elem->IsVisible());
     return 1;
 }
 ELEM_MAKERFN(zIndex)
@@ -175,7 +175,7 @@ ELEM_MAKEFN(removePseudoClass)
     return 0;
 }
 ELEM_MAKERFN(isPseudoClassSet)
-    lua_pushbool(L, elem->IsPseudoClassSet(luaU_to<String>(L, 2)));
+    luaU_push(L, elem->IsPseudoClassSet(luaU_to<String>(L, 2)));
     return 1;
 }
 ELEM_MAKERFN(tagName)
@@ -305,7 +305,7 @@ ELEM_MAKERFN(getElementsByTagName)
     lua_createtable(L, ct, 0);
     int t = lua_gettop(L);
     for(int i = 0; i < ct; i++) {
-        lua_pushinteger(L, i);
+        lua_pushinteger(L, 1+i);
         luaW_push(L, el.at(i));
         lua_settable(L, t);
     }
@@ -318,7 +318,7 @@ ELEM_MAKERFN(getElementsByClassName)
     lua_createtable(L, ct, 0);
     int t = lua_gettop(L);
     for(int i = 0; i < ct; i++) {
-        lua_pushinteger(L, i);
+        lua_pushinteger(L, 1+i);
         luaW_push(L, el.at(i));
         lua_settable(L, t);
     }

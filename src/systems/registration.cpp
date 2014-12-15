@@ -13,7 +13,7 @@
 #include "resources/md5anim.hpp"
 #include "resources/pixel-buffer.hpp"
 #include "hardware/cpu.hpp"
-#include "interactive.hpp"
+#include "interaction.hpp"
 
 #include "components/component-factory.hpp"
 #include "components/component-templates.hpp"
@@ -74,7 +74,6 @@ void ComponentFactory::RegisterTypes() {
     RegisterComponentType(ComponentAdder<SYSTEM,Component::Movable,bool>(system_value));
     RegisterComponentType(ComponentAdder<SHARED,Component::GraphicTransform,bool>(shared));
     RegisterComponentType(ComponentAdder<SHARED,Component::GameTransform,bool>(shared));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::Interactable>(system));
     RegisterComponentType(ComponentAdder<SYSTEM,Component::VComputer>(system));
     RegisterComponentType(ComponentAdder<SYSTEM,Component::VDisplay>(system));
     RegisterComponentType(ComponentAdder<SYSTEM,Component::VKeyboard>(system));
