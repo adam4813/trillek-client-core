@@ -127,7 +127,8 @@ public:
     void BindToRender() const;
     void BindToRead() const;
     void BindToWrite() const;
-    void BindTextures() const;
+    unsigned int BindTextures() const;
+    unsigned int BindTextures(unsigned int) const;
     bool IsCustomSize() const { return customsize; }
 
     void GetRect(ViewRect& vr) {

@@ -80,6 +80,8 @@ int main(int argCount, char **argValues) {
 
     systems.push(&trillek::game.GetVComputerSystem());
 
+    os.OSMessageCheck();
+
     // start the scheduler in another thread
     std::thread tp(
                    &trillek::TrillekScheduler::Initialize,

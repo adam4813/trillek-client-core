@@ -583,7 +583,7 @@ void RenderLayer::BindToRead() const {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_id); CheckGLError();
 }
 
-void RenderLayer::BindTextures() const {
+unsigned int RenderLayer::BindTextures() const {
     GLuint attachcount = this->attachments.size();
     for(unsigned int i = 0; i < attachcount; i++) {
         auto& attitr = this->attachments[i];
@@ -592,6 +592,19 @@ void RenderLayer::BindTextures() const {
             attitr->BindTexture();
         }
     }
+    return attachcount;
+}
+
+unsigned int RenderLayer::BindTextures(unsigned int at) const {
+    GLuint attachcount = this->attachments.size();
+    for(unsigned int i = 0; i < attachcount; i++) {
+        auto& attitr = this->attachments[i];
+        if(attitr) {
+            glActiveTexture(GL_TEXTURE0 + i + at);
+            attitr->BindTexture();
+        }
+    }
+    return attachcount + at;
 }
 
 void RenderLayer::UnbindFromRead() {

@@ -158,6 +158,10 @@ void OS::OSMessageLoop() {
     glfwWaitEvents();
 }
 
+void OS::OSMessageCheck() {
+    glfwPollEvents();
+}
+
 int OS::GetWindowWidth() {
     return this->client_width;
 }

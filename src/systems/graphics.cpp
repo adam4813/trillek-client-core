@@ -340,6 +340,7 @@ void RenderSystem::RenderScene() const {
                 rem_textures.push_back(*texitem);
             }
         }
+        unsigned int bind_point = 0;
         for(auto& cmditem : activerender->render_commands) {
             if(!cmditem.resolved && !cmditem.resolve_error) {
                 auto resolve = list_resolvers.find(cmditem.cmd);
@@ -355,6 +356,13 @@ void RenderSystem::RenderScene() const {
                 else {
                     break;
                 }
+            }
+            switch(cmditem.cmd) {
+            case RenderCmd::BIND_TEXTURE:
+            case RenderCmd::BIND_LAYER_TEXTURES:
+                break;
+            default:
+                bind_point = 0;
             }
             switch(cmditem.cmd) {
             case RenderCmd::CLEAR_SCREEN:
@@ -474,7 +482,7 @@ void RenderSystem::RenderScene() const {
                     run_op++;
                     auto layer = run_op->Get<std::shared_ptr<RenderLayer>>();
                     if(layer) {
-                        layer->BindTextures();
+                        bind_point = layer->BindTextures(bind_point);
                     }
                 }
                 else {
@@ -810,14 +818,12 @@ void RenderSystem::RenderLightingPass(const glm::mat4x4 &view_matrix, const floa
 inline void RenderSystem::UpdateModelMatrices(const frame_tp& timepoint) {
     auto& transform_container =
         game.GetSharedComponent().Map<Component::GraphicTransform>();
-    frame_tp rtp;
     static frame_tp ltp;
-    rtp = ltp;
     std::unique_lock<std::mutex> tslock(game.transforms_lock, std::defer_lock);
     if( !tslock.try_lock() ) {
         return;
     }
-    auto hist = transform_container.Pull(timepoint, rtp);
+    //auto hist = transform_container.Pull(timepoint, ltp);
     int i;
 
     auto& transform_map_head = transform_container.GetLastPositiveCommit();
@@ -848,6 +854,9 @@ void RenderSystem::RenderPostPass(std::shared_ptr<Shader> postshader) const {
     postshader->Use();
     //glBindVertexArray(screenquad.vao); CheckGLError();
     screen_quad.Bind();
+    glUniform4f(postshader->Uniform("pixels"),
+        this->window_width, this->window_height,
+        1.f / this->window_width, 1.f / this->window_height);CheckGLError();
     glUniform1i(postshader->Uniform("layer0"), 0);CheckGLError();
     glUniform1i(postshader->Uniform("layer1"), 1);CheckGLError();
     glUniform1i(postshader->Uniform("layer2"), 2);CheckGLError();
