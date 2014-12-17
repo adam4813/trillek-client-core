@@ -7,6 +7,7 @@
 #include <mutex>
 
 #include "systems/dispatcher.hpp"
+#include "atomic-queue.hpp"
 #include "os-event.hpp"
 #include "trillek.hpp"
 #include "systems/system-base.hpp"
@@ -52,6 +53,7 @@ class LuaSystem final :
     public UIEventHandler,
     public event::Subscriber<KeyboardEvent>,
     public event::Subscriber<MouseBtnEvent>,
+    public event::Subscriber<MouseScrollEvent>,
     public event::Subscriber<MouseMoveEvent> {
 public:
     LuaSystem();
@@ -112,6 +114,10 @@ public:
      */
     void Notify(const MouseBtnEvent* mousebtn_event);
 
+    /** Handles mouse scroll events.
+     */
+    void Notify(const MouseScrollEvent*);
+
     /**
      * \brief Handles mouse move events.
      */
@@ -153,9 +159,10 @@ private:
      */
     void RegisterTypes();
 
-    std::list<KeyboardEvent> event_key;
-    std::list<MouseBtnEvent> event_mbtn;
-    std::list<MouseMoveEvent> event_mmove;
+    AtomicQueue<KeyboardEvent> event_key;
+    AtomicQueue<MouseBtnEvent> event_mbtn;
+    AtomicQueue<MouseScrollEvent> event_mscroll;
+    AtomicQueue<MouseMoveEvent> event_mmove;
     lua_State* L;
     mutable std::mutex Lm;
     long long delta; // The time since the last HandleEvents was called.

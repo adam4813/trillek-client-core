@@ -121,6 +121,7 @@ bool OS::InitializeWindow(const int width, const int height, const std::string t
     glfwSetWindowSizeCallback(this->window, &OS::windowResized);
     glfwSetKeyCallback(this->window, &OS::keyboardEvent);
     glfwSetCursorPosCallback(this->window, &OS::mouseMoveEvent);
+    glfwSetScrollCallback(this->window, &OS::mouseScrollEvent);
     glfwSetCharCallback(this->window, &OS::characterEvent);
     glfwSetMouseButtonCallback(this->window, &OS::mouseButtonEvent);
     glfwSetWindowFocusCallback(this->window, &OS::windowFocusChange);
@@ -210,6 +211,15 @@ void OS::mouseMoveEvent(GLFWwindow* window, double x, double y) {
     }
 }
 
+void OS::mouseScrollEvent(GLFWwindow* window, double x, double y) {
+    // Get the user pointer and cast it.
+    OS* os = static_cast<OS*>(glfwGetWindowUserPointer(window));
+
+    if (os) {
+        os->DispatchMouseScrollEvent(x, y);
+    }
+}
+
 void OS::mouseButtonEvent(GLFWwindow* window, int button, int action, int mods) {
     // Get the user pointer and cast it.
     OS* os = static_cast<OS*>(glfwGetWindowUserPointer(window));
@@ -279,6 +289,11 @@ void OS::DispatchMouseMoveEvent(const double x, const double y) {
     }
 }
 
+void OS::DispatchMouseScrollEvent(const double x, const double y) {
+    MouseScrollEvent mscroll_event = { x, y };
+    event::Dispatcher<MouseScrollEvent>::GetInstance()->NotifySubscribers(&mscroll_event);
+}
+
 void OS::DispatchMouseButtonEvent(const int button, const int action, const int mods) {
     MouseBtnEvent mbtn_event;
     if (action == GLFW_PRESS) {
@@ -295,6 +310,12 @@ void OS::DispatchMouseButtonEvent(const int button, const int action, const int 
     }
     else if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
         mbtn_event.button = MouseBtnEvent::MIDDLE;
+    }
+    else if (button == GLFW_MOUSE_BUTTON_4) {
+        mbtn_event.button = MouseBtnEvent::EX1;
+    }
+    else if (button == GLFW_MOUSE_BUTTON_5) {
+        mbtn_event.button = MouseBtnEvent::EX2;
     }
     event::Dispatcher<MouseBtnEvent>::GetInstance()->NotifySubscribers(&mbtn_event);
 
