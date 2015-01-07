@@ -26,12 +26,12 @@ extern "C"
 template<>
 struct luaU_Impl<std::string> {
     static std::string luaU_check(lua_State* L, int index) {
-        unsigned x;
+        size_t x;
         const char * cs = lua_tolstring(L, index, &x);
         return std::string(cs, x);
     }
     static std::string luaU_to(lua_State* L, int index) {
-        unsigned x;
+        size_t x;
         const char * cs = lua_tolstring(L, index, &x);
         return std::string(cs, x);
     }

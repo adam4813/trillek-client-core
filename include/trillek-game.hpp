@@ -4,6 +4,8 @@
 #include <memory>
 #include <mutex>
 
+#include "trillek.hpp"
+
 namespace trillek {
 
 namespace gui {

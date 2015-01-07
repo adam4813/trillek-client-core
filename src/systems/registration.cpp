@@ -77,11 +77,9 @@ void ComponentFactory::RegisterTypes() {
     RegisterComponentType(ComponentAdder<SYSTEM,Component::VComputer>(system));
     RegisterComponentType(ComponentAdder<SYSTEM,Component::VDisplay>(system));
     RegisterComponentType(ComponentAdder<SYSTEM,Component::VKeyboard>(system));
-    RegisterComponentType<graphics::Renderable>();
-    RegisterComponentType<graphics::LightBase>();
-    RegisterComponentType<graphics::SixDOFCamera>();
-    RegisterSystem<graphics::Renderable>(&game.GetGraphicSystem());
-    RegisterSystem<graphics::LightBase>(&game.GetGraphicSystem());
+    RegisterComponentType(ComponentAdder<SYSTEM,Component::Renderable>(system));
+    RegisterComponentType(ComponentAdder<SYSTEM,Component::Light>(system));
+    RegisterComponentType(ComponentAdder<SYSTEM,Component::Camera>(system));
     RegisterSystem<graphics::CameraBase>(&game.GetGraphicSystem());
 }
 

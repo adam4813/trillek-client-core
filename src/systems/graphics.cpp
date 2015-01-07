@@ -1,12 +1,11 @@
 #include "transform.hpp"
 #include "type-id.hpp"
 #include "trillek-game.hpp"
+#include "components/system-component.hpp"
 #include "systems/graphics.hpp"
 #include "systems/resource-system.hpp"
-#include "systems/transform-system.hpp"
 #include "systems/gui.hpp"
 #include "resources/text-file.hpp"
-#include "resources/md5mesh.hpp"
 #include "resources/mesh.hpp"
 #include "graphics/shader.hpp"
 #include "graphics/material.hpp"
@@ -81,29 +80,23 @@ const int* RenderSystem::Start(const unsigned int width, const unsigned int heig
     );
 
     // Activate the lowest ID or first camera and get the initial view matrix.
-    id_t cam_idnum = 0;
-    std::weak_ptr<CameraBase> cam_ptr;
-    auto cam_itr = cameras.begin();
-    if(cam_itr != cameras.end()) {
-        cam_idnum = cam_itr->first;
-        cam_ptr = cam_itr->second;
-        for(cam_itr++ ; cam_itr != cameras.end(); cam_itr++) {
-            if(cam_itr->first < cam_idnum) {
-                cam_idnum = cam_itr->first;
-                cam_ptr = cam_itr->second;
-            }
-        }
-        this->camera_id = cam_idnum;
-        this->camera = cam_ptr.lock(); // get the ptr to it
+    auto &sysc = game.GetSystemComponent();
+    auto &bits = sysc.Bitmap<Component::Camera>();
+    size_t endc = bits.size();
+    for (auto cam = bits.enumerator(endc); *cam < endc; ++cam) {
+        this->camera_id = *cam;
+        this->camera = sysc.GetSharedPtr<Component::Camera>(*cam);
+        break;
     }
-    else {
+
+    if(!this->camera) {
         LOGMSGC(INFO) << "No camera found, creating a camera id #0";
         // make one if none found
         this->camera_id = 0;
         this->camera = std::make_shared<SixDOFCamera>();
     }
     if (this->camera) {
-        this->camera->Activate(cam_idnum);
+        this->camera->Activate(this->camera_id);
         this->vp_center.view_matrix = this->camera->GetViewMatrix();
     }
 
@@ -546,7 +539,7 @@ void RenderSystem::RenderGUI() const {
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_MULTISAMPLE);
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     this->guisysshader->Use();
     float pxwidth, pxheight;
     if(!window_width) {
@@ -635,9 +628,11 @@ void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_m
             }
             glUniform1i(u_istex_loc, hastex ? 1 : 0);
 
+            /*
+            XXX: VAOs being preferenced after textures is awful
             // Loop through each renderable group.
             for (const auto& rengrp : texgrp.renderable_groups) {
-                const auto& bufgrp = rengrp.renderable->GetBufferGroup(rengrp.buffer_group_index);
+
                 glBindVertexArray(bufgrp->vao);
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufgrp->ibo);
 
@@ -655,6 +650,7 @@ void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_m
                     glDrawElements(GL_TRIANGLES, bufgrp->ibo_count, GL_UNSIGNED_INT, 0);
                 }
             }
+            */
             for (size_t tex_index = 0; tex_index < texgrp.texture_indicies.size(); ++tex_index) {
                 Material::DeactivateTexture(tex_index);
             }
@@ -674,13 +670,21 @@ void RenderSystem::RenderDepthOnlyPass(const float *view_matrix, const float *pr
     CheckGLError();
     depthpassshader->Use();
     CheckGLError();
-    if(this->alllights.begin() == this->alllights.end()) {
-        return;
+    auto &sysc = game.GetSystemComponent();
+    auto &bits = sysc.Bitmap<Component::Light>();
+    size_t endc = bits.size();
+    std::shared_ptr<LightBase> light;
+    id_t lightid;
+    for (auto clight = bits.enumerator(endc); *clight < endc; ++clight) {
+        lightid = *clight;
+        auto light = sysc.GetSharedPtr<Component::Light>(lightid);
+        if(light->shadows) {
+            break;
+        }
     }
-    auto lightitr = this->alllights.begin();
-    LightBase *light = lightitr->second.get();
-    if(light == nullptr) return;
-    auto ltiter = this->model_matrices.find(lightitr->first);
+    if(!light) return;
+    if(!light->shadows) return;
+    auto ltiter = this->model_matrices.find(lightid);
     if(ltiter == this->model_matrices.end()) return;
     const glm::mat4x4& lightmat = ltiter->second;
     glm::vec3 lightpos = glm::vec3(lightmat[3][0], lightmat[3][1], lightmat[3][2]);
@@ -693,9 +697,7 @@ void RenderSystem::RenderDepthOnlyPass(const float *view_matrix, const float *pr
     glUniform3f(depthpassshader->Uniform("light_pos"), lightpos.x, lightpos.y, lightpos.z);
     glUniformMatrix4fv(depthpassshader->Uniform("light_vp"), 1, GL_FALSE, (float*)&light_matrix);
     CheckGLError();
-    if(light->shadows) {
-        light->depthmatrix = light_matrix;
-    }
+    light->depthmatrix = light_matrix;
     glDrawBuffer(GL_NONE);
     GLint u_model_loc = depthpassshader->Uniform("model");
     GLint u_animatrix_loc = depthpassshader->Uniform("animation_matrix");
@@ -704,6 +706,7 @@ void RenderSystem::RenderDepthOnlyPass(const float *view_matrix, const float *pr
         for (const auto& texgrp : matgrp.texture_groups) {
             // Loop through each renderable group.
             for (const auto& rengrp : texgrp.renderable_groups) {
+                /* TODO delete after rewrite
                 const auto& bufgrp = rengrp.renderable->GetBufferGroup(rengrp.buffer_group_index);
                 glBindVertexArray(bufgrp->vao);
                 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufgrp->ibo);
@@ -721,6 +724,7 @@ void RenderSystem::RenderDepthOnlyPass(const float *view_matrix, const float *pr
                     }
                     glDrawElements(GL_TRIANGLES, bufgrp->ibo_count, GL_UNSIGNED_INT, 0);
                 }
+                */
             }
         }
     }
@@ -760,10 +764,13 @@ void RenderSystem::RenderLightingPass(const glm::mat4x4 &view_matrix, const floa
     }
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
-    for (auto& clight : this->alllights) {
-        auto ltiter = this->model_matrices.find(clight.first);
-        if(clight.second && clight.second->enabled && ltiter != this->model_matrices.end()) {
-            LightBase *activelight = clight.second.get();
+    auto &sysc = game.GetSystemComponent();
+    auto &bits = sysc.Bitmap<Component::Light>();
+    size_t endc = bits.size();
+    for (auto clight = bits.enumerator(endc); *clight < endc; ++clight) {
+        auto ltiter = this->model_matrices.find(*clight);
+        LightBase &activelight = sysc.Get<Component::Light>(*clight);
+        if(activelight.enabled && ltiter != this->model_matrices.end()) {
             std::shared_ptr<Texture> shadowbuf;
             GLint useshadow = 0;
             const glm::mat4& lightmat = ltiter->second;
@@ -771,10 +778,10 @@ void RenderSystem::RenderLightingPass(const glm::mat4x4 &view_matrix, const floa
             glm::vec4 lightdir = glm::mat3x4(lightmat) * glm::vec3(0.f, 0.f, -1.f);
             if(l_pos_loc > 0) glUniform3f(l_pos_loc, lightpos.x, lightpos.y, lightpos.z);
             if(l_dir_loc > 0) glUniform3f(l_dir_loc, lightdir.x, lightdir.y, lightdir.z);
-            if(l_col_loc > 0) glUniform3fv(l_col_loc, 1, (float*)&activelight->color);
-            if(l_type_loc > 0) glUniform1ui(l_type_loc, activelight->lighttype);
-            auto lp_itr = activelight->light_props.begin();
-            for(;lp_itr != activelight->light_props.end(); lp_itr++) {
+            if(l_col_loc > 0) glUniform3fv(l_col_loc, 1, (float*)&activelight.color);
+            if(l_type_loc > 0) glUniform1ui(l_type_loc, activelight.lighttype);
+            auto lp_itr = activelight.light_props.begin();
+            for(;lp_itr != activelight.light_props.end(); lp_itr++) {
                 GLint uniformloc = lightingshader->Uniform(lp_itr->GetName().c_str());
                 if(uniformloc > 0) {
                     if(lp_itr->Is<float>()) {
@@ -793,13 +800,13 @@ void RenderSystem::RenderLightingPass(const glm::mat4x4 &view_matrix, const floa
                         glUniform2f(uniformloc, val.x, val.y);
                     }
                 }
-                else if(activelight->shadows && lp_itr->GetName() == "shadow") {
+                else if(activelight.shadows && lp_itr->GetName() == "shadow") {
                     shadowbuf = Get<Texture>(lp_itr->Get<std::string>());
                     if(shadowbuf) {
                         useshadow = 1 + debugmode;
                         glActiveTexture(GL_TEXTURE4);
                         glBindTexture(GL_TEXTURE_2D, shadowbuf->GetID());
-                        glm::mat4x4 invviewshadow = activelight->depthmatrix * glm::inverse(view_matrix);
+                        glm::mat4x4 invviewshadow = activelight.depthmatrix * glm::inverse(view_matrix);
                         if(l_tshadow_loc > 0) glUniformMatrix4fv(l_tshadow_loc, 1, GL_FALSE, &invviewshadow[0][0]);
                     }
                 }
@@ -919,48 +926,9 @@ void RenderSystem::Add(const std::string & instancename, std::shared_ptr<Texture
     dyn_textures.push_back(instanceptr);
     graphics_instances[type_id][instancename] = instanceptr;
 }
+/*
 
-template<>
-bool RenderSystem::AddEntityComponent(const id_t entity_id, std::shared_ptr<LightBase> light) {
-
-    // Loop through all the lights and see if one exists for the given entity.
-    for (auto& r : this->alllights) {
-        if (r.first == entity_id) {
-            r.second = light;
-            return false;
-        }
-    }
-
-    // No entry exists for the given entity, so add it.
-    this->alllights.push_back(std::make_pair(entity_id, light));
-
-    return true;
-}
-
-template<>
-bool RenderSystem::AddEntityComponent(const id_t entity_id, std::shared_ptr<CameraBase> cam) {
-    auto cam_itr = this->cameras.find(entity_id);
-    if(cam_itr != this->cameras.end()) {
-        this->cameras[entity_id] = cam; // replace existing
-        return false;
-    }
-    this->cameras[entity_id] = cam;
-    return true;
-}
-
-template<>
-bool RenderSystem::AddEntityComponent(const id_t entity_id, std::shared_ptr<Renderable> ren) {
-
-    // Loop through all the renderables and see if one exists for the given entity_id.
-    for (auto& r : this->renderables) {
-        if (r.first == entity_id) {
-            r.second = ren;
-            return false;
-        }
-    }
-
-    // No entry exists for the given entity ID, so add it.
-    this->renderables.push_back(std::make_pair(entity_id, ren));
+bool RenderSystem::AddEntityComponent(entity_id, shared_ptr<Renderable> ren)
 
     MaterialGroup* matgrp = nullptr;
     // Check if the material for exists based on shader.
@@ -978,9 +946,6 @@ bool RenderSystem::AddEntityComponent(const id_t entity_id, std::shared_ptr<Rend
 
         matgrp->material.SetShader(ren->GetShader());
 
-        //const auto& shader = matgrp->material.GetShader();
-        //shader->Use();
-        //shader->UnUse();
     }
 
     // Map the renderable into the render graph material groups.
@@ -1043,78 +1008,57 @@ bool RenderSystem::AddEntityComponent(const id_t entity_id, std::shared_ptr<Rend
     return true;
 }
 
-void RenderSystem::AddDynamicComponent(const id_t entity_id, std::shared_ptr<Container> component) {
-    int r;
-    if(0 != (r = TryAddComponent<Renderable>(entity_id, component))) {
-        if(r < 0) {
-            LOGMSGC(ERROR) << "Could not add component Renderable";
-            return;
-        }
-    }
-    else if(0 != (r = TryAddComponent<LightBase>(entity_id, component))) {
-        if(r < 0) {
-            LOGMSGC(ERROR) << "Could not add component LightBase";
-            return;
-        }
-    }
-    else if(0 != (r = TryAddComponent<CameraBase>(entity_id, component))) {
-        if(r < 0) {
-            LOGMSGC(ERROR) << "Could not add component CameraBase";
-            return;
-        }
-    }
-}
-
+// to be removed
 void RenderSystem::RemoveRenderable(const id_t entity_id) {
-    // Loop through all the renderables and see if one exists for the given entityID.
-    for (auto& r : this->renderables) {
-        if (r.first == entity_id) {
-            auto matgrp_itr = this->material_groups.begin();
-            while (matgrp_itr != this->material_groups.end()) {
-                auto texgrp_itr = matgrp_itr->texture_groups.begin();
-                while (texgrp_itr != matgrp_itr->texture_groups.end()) {
+    auto &sysc = game.GetSystemComponent();
+    if(sysc.Has<Component::Renderable>(entity_id)) {
+        auto matgrp_itr = this->material_groups.begin();
+        while (matgrp_itr != this->material_groups.end()) {
+            auto texgrp_itr = matgrp_itr->texture_groups.begin();
+            while (texgrp_itr != matgrp_itr->texture_groups.end()) {
 
-                    auto rengrp_itr = texgrp_itr->renderable_groups.begin();
-                    while (rengrp_itr != texgrp_itr->renderable_groups.end()) {
-                        // Check if the renderblae is the one we are looking for an remove it.
-                        if (rengrp_itr->renderable == r.second) {
-                            rengrp_itr = texgrp_itr->renderable_groups.erase(rengrp_itr);
-                        }
-                        else {
-                            ++rengrp_itr;
-                        }
-                    }
-
-                    // Check if the texture group is empty and remove it from the list.
-                    if (texgrp_itr->renderable_groups.size() == 0) {
-                        texgrp_itr = matgrp_itr->texture_groups.erase(texgrp_itr);
+                auto rengrp_itr = texgrp_itr->renderable_groups.begin();
+                while (rengrp_itr != texgrp_itr->renderable_groups.end()) {
+                    // Check if the renderblae is the one we are looking for an remove it.
+                    // <3 renderblaes ^
+                    if (rengrp_itr->renderable == sysc.GetSharedPtr<Component::Renderable>(entity_id)) {
+                        rengrp_itr = texgrp_itr->renderable_groups.erase(rengrp_itr);
                     }
                     else {
-                        ++texgrp_itr;
+                        ++rengrp_itr;
                     }
                 }
 
-                // Check if the material group is empty and remove it from the list.
-                if (matgrp_itr->texture_groups.size() == 0) {
-                    matgrp_itr = this->material_groups.erase(matgrp_itr);
+                // Check if the texture group is empty and remove it from the list.
+                if (texgrp_itr->renderable_groups.size() == 0) {
+                    texgrp_itr = matgrp_itr->texture_groups.erase(texgrp_itr);
                 }
                 else {
-                    ++matgrp_itr;
+                    ++texgrp_itr;
                 }
             }
-            this->renderables.remove(r);
-            return;
+
+            // Check if the material group is empty and remove it from the list.
+            if (matgrp_itr->texture_groups.size() == 0) {
+                matgrp_itr = this->material_groups.erase(matgrp_itr);
+            }
+            else {
+                ++matgrp_itr;
+            }
         }
+        sysc.Remove<Component::Renderable>(entity_id);
+        return;
     }
 }
+*/
 
 void RenderSystem::HandleEvents(frame_tp timepoint) {
     auto now = game.GetOS().GetTime().count();
     static frame_tp last_tp = now;
     auto delta = now - last_tp;
-    if(delta > 66666666ll) {
+    if(delta > 50000000ll) {
         if(!this->frame_drop) {
-            LOGMSGC(INFO) << "Time lag " << (delta - 16666666) * 1.0E-9 << " > 50 milliseconds";
+            LOGMSGC(INFO) << "Time lag " << (delta - 13333333) * 1.0E-9 << " > 50 milliseconds";
             this->frame_drop_count = 0;
         }
         this->frame_drop = true;
@@ -1139,9 +1083,13 @@ void RenderSystem::HandleEvents(frame_tp timepoint) {
         this->dyn_textures.remove(*tex);
     }
     this->rem_textures.clear();
-    for (auto& ren : this->renderables) {
-        if (ren.second->GetAnimation()) {
-            ren.second->GetAnimation()->UpdateAnimation(delta * 1E-9);
+    auto &sysc = game.GetSystemComponent();
+    auto &bits = sysc.Bitmap<Component::Renderable>();
+    size_t endc = bits.size();
+    for (auto ren = bits.enumerator(endc); *ren < endc; ++ren) {
+        auto &renc = sysc.Get<Component::Renderable>(*ren);
+        if (renc.GetAnimation()) {
+            renc.GetAnimation()->UpdateAnimation(delta * 1E-9);
         }
     }
     UpdateModelMatrices(timepoint);

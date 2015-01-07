@@ -143,33 +143,6 @@ public:
      */
     void SetViewportSize(const unsigned int width, const unsigned int height);
 
-    /**
-     * \brief Template for adding components to the system.
-     *
-     * This function is meant for specializations for each component type
-     * \param const unsigned int The entity ID the component belongs to.
-     * \param std::shared_ptr<typename CT> The component to add.
-     * \return bool false if the component exists on the entity
-     */
-    template<typename CT>
-    bool AddEntityComponent(const id_t entity_id, std::shared_ptr<CT>);
-
-    /**
-     * \brief Adds a component to the system.
-     *
-     * If the component is not supported the method returns without adding the component.
-     * \param const unsigned int The entity ID the component belongs to.
-     * \param std::shared_ptr<ComponentBase> component to add.
-     */
-    void AddDynamicComponent(const id_t entity_id, std::shared_ptr<Container> component) override;
-
-    /**
-     * \brief Removes a Renderable component from the system..
-     *
-     * \param const unsigned int entityID The component to remove.
-     */
-    void RemoveRenderable(const unsigned int entity_id);
-
     /** \brief Handle incoming events to update data
      *
      * This function is called once every frame. It is the only
@@ -203,8 +176,7 @@ public:
         RenderSystem &rensys = *this;
         auto cgenlambda =  [&rensys] (const rapidjson::Value& node) -> bool {
             if(!node.IsObject()) {
-                // TODO use logger
-                std::cerr << "[ERROR] Invalid type for " << reflection::GetTypeName<RT>() << "\n";
+                LOGMSGFOR(ERROR, RenderSystem) << "Invalid type for " << reflection::GetTypeName<RT>();
                 return false;
             }
             for(auto section_itr = node.MemberBegin();
@@ -400,19 +372,10 @@ private:
 
     std::map<std::string, std::function<bool(const rapidjson::Value&)>> parser_functions;
 
-    // A list of the renderables in the system. Stored as a pair (entity ID, Renderable).
-    std::list<std::pair<id_t, std::shared_ptr<Renderable>>> renderables;
-
-    // A list of the lights in the system. Stored as a pair (entity ID, LightBase).
-    std::list<std::pair<id_t, std::shared_ptr<LightBase>>> alllights;
-
     // A list of all dynamic textures in the system
     std::list<std::shared_ptr<Texture>> dyn_textures;
     // A list of all textures that need to be removed from dyn_textures
     mutable std::list<std::shared_ptr<Texture>> rem_textures;
-
-    // map IDs to cameras
-    std::map<id_t, std::shared_ptr<CameraBase>> cameras;
 
     // Active objects
     std::shared_ptr<RenderList> activerender;
@@ -439,21 +402,6 @@ private:
  */
 template<>
 void RenderSystem::Add(const std::string & instancename, std::shared_ptr<Texture> instanceptr);
-
-/**
- * \brief Adds a renderable component to the system.
- */
-template<>
-bool RenderSystem::AddEntityComponent(const id_t entity_id, std::shared_ptr<Renderable>);
-
-/**
- * \brief Adds a light component to the system.
- */
-template<>
-bool RenderSystem::AddEntityComponent(const id_t entity_id, std::shared_ptr<LightBase>);
-
-template<>
-bool RenderSystem::AddEntityComponent(const id_t entity_id, std::shared_ptr<CameraBase>);
 
 } // End of graphics
 

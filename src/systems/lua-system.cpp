@@ -90,7 +90,6 @@ void LuaSystem::HandleEvents(frame_tp timepoint) {
                     }
                 }
             }
-            this->Lm.unlock();
         }
         evh_itr = this->event_handlers.find(reflection::GetTypeID<MouseScrollEvent>());
         if(evh_itr != this->event_handlers.end()) {
