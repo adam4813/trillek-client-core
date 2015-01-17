@@ -30,6 +30,7 @@ RenderSystem::RenderSystem()
     this->window_width = 640;
     this->frame_drop_count = 0;
     this->transformsvalid = false;
+    this->scene_rebuild = false;
     this->gui_interface.reset(new RenderSystem::GuiRenderInterface(this));
 
     Shader::InitializeTypes();
@@ -607,6 +608,7 @@ void RenderSystem::RenderGUI() const {
 
 void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_matrix) const {
     if(!transformsvalid) return;
+    /*
     for (auto matgrp : this->material_groups) {
         const auto& shader = matgrp.material.GetShader();
         shader->Use();
@@ -628,29 +630,7 @@ void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_m
             }
             glUniform1i(u_istex_loc, hastex ? 1 : 0);
 
-            /*
-            XXX: VAOs being preferenced after textures is awful
-            // Loop through each renderable group.
-            for (const auto& rengrp : texgrp.renderable_groups) {
-
-                glBindVertexArray(bufgrp->vao);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufgrp->ibo);
-
-                for (id_t entity_id : rengrp.instances) {
-                    glUniformMatrix4fv(u_model_loc, 1, GL_FALSE, &this->model_matrices.at(entity_id)[0][0]);
-                    auto renanim = rengrp.animations.find(entity_id);
-                    if (renanim != rengrp.animations.end()) {
-                        glUniform1i(u_animate_loc, 1);
-                        auto &animmatricies = renanim->second->animation_matricies;
-                        glUniformMatrix4fv(u_animatrix_loc, animmatricies.size(), GL_FALSE, &animmatricies[0][0][0]);
-                    }
-                    else {
-                        glUniform1i(u_animate_loc, 0);
-                    }
-                    glDrawElements(GL_TRIANGLES, bufgrp->ibo_count, GL_UNSIGNED_INT, 0);
-                }
-            }
-            */
+            // TODO rewrite
             for (size_t tex_index = 0; tex_index < texgrp.texture_indicies.size(); ++tex_index) {
                 Material::DeactivateTexture(tex_index);
             }
@@ -658,6 +638,7 @@ void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_m
 
         shader->UnUse();
     }
+    */
 }
 
 void RenderSystem::RenderDepthOnlyPass(const float *view_matrix, const float *proj_matrix) const {
@@ -702,32 +683,7 @@ void RenderSystem::RenderDepthOnlyPass(const float *view_matrix, const float *pr
     GLint u_model_loc = depthpassshader->Uniform("model");
     GLint u_animatrix_loc = depthpassshader->Uniform("animation_matrix");
     GLint u_animate_loc = depthpassshader->Uniform("animated");
-    for (auto matgrp : this->material_groups) {
-        for (const auto& texgrp : matgrp.texture_groups) {
-            // Loop through each renderable group.
-            for (const auto& rengrp : texgrp.renderable_groups) {
-                /* TODO delete after rewrite
-                const auto& bufgrp = rengrp.renderable->GetBufferGroup(rengrp.buffer_group_index);
-                glBindVertexArray(bufgrp->vao);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bufgrp->ibo);
-
-                for (id_t entity_id : rengrp.instances) {
-                    glUniformMatrix4fv(u_model_loc, 1, GL_FALSE, &this->model_matrices.at(entity_id)[0][0]);
-                    auto renanim = rengrp.animations.find(entity_id);
-                    if (renanim != rengrp.animations.end()) {
-                        glUniform1i(u_animate_loc, 1);
-                        auto &animmatricies = renanim->second->animation_matricies;
-                        glUniformMatrix4fv(u_animatrix_loc, animmatricies.size(), GL_FALSE, &animmatricies[0][0][0]);
-                    }
-                    else {
-                        glUniform1i(u_animate_loc, 0);
-                    }
-                    glDrawElements(GL_TRIANGLES, bufgrp->ibo_count, GL_UNSIGNED_INT, 0);
-                }
-                */
-            }
-        }
-    }
+    /* TODO rewrite */
     CheckGLError();
     Shader::UnUse();
     CheckGLError();
@@ -859,7 +815,6 @@ inline void RenderSystem::UpdateModelMatrices(const frame_tp& timepoint) {
 
 void RenderSystem::RenderPostPass(std::shared_ptr<Shader> postshader) const {
     postshader->Use();
-    //glBindVertexArray(screenquad.vao); CheckGLError();
     screen_quad.Bind();
     glUniform4f(postshader->Uniform("pixels"),
         this->window_width, this->window_height,
@@ -926,131 +881,122 @@ void RenderSystem::Add(const std::string & instancename, std::shared_ptr<Texture
     dyn_textures.push_back(instanceptr);
     graphics_instances[type_id][instancename] = instanceptr;
 }
-/*
 
-bool RenderSystem::AddEntityComponent(entity_id, shared_ptr<Renderable> ren)
+RenderSystem::MeshRefData::~MeshRefData() {
+    LOGMSG(DEBUG) << "~MeshRefData()";
+}
 
-    MaterialGroup* matgrp = nullptr;
-    // Check if the material for exists based on shader.
-    for (auto& mg : this->material_groups) {
-        if (mg.material.GetShader() == ren->GetShader()) {
-            matgrp = &mg;
+void RenderSystem::ActivateMesh(std::shared_ptr<resource::Mesh> mesh, LoadStatus& lstat) {
+    auto mref = mesh_refs.find(mesh.get());
+    if(mref == mesh_refs.end()) {
+        LOGMSGC(DEBUG) << "Loading new mesh for " << lstat.entity;
+        size_t sbindex = 0;
+        if(mesh->IsDynamic()) {
+            sbindex = scenebuffers.size();
+            scenebuffers.push_back(VertexList());
+            scenebuffers[sbindex].dynamic = true;
         }
-    }
-
-    // There wasn't an existing material group so add one.
-    if (matgrp == nullptr) {
-        MaterialGroup mg;
-        this->material_groups.push_back(mg);
-        matgrp = &this->material_groups.back();
-
-        matgrp->material.SetShader(ren->GetShader());
-
-    }
-
-    // Map the renderable into the render graph material groups.
-    for (size_t i = 0; i < ren->GetBufferGroupCount(); ++i) {
-        MaterialGroup::TextureGroup* texgrp = nullptr;
-
-        auto buffer_group = ren->GetBufferGroup(i);
-
-        for (MaterialGroup::TextureGroup& tex_grp_itr : matgrp->texture_groups) {
-            if (texgrp != nullptr) {
-                break;
-            }
-            // Loop through and see if all the texture indicies line up.
-            for (size_t i = 0; (i < tex_grp_itr.texture_indicies.size()) &&
-                (i < buffer_group->textures.size()); ++i) {
-                if (tex_grp_itr.texture_indicies[i] != matgrp->material.GetTextureIndex(buffer_group->textures[i])) {
+        else {
+            size_t lim = scenebuffers.size();
+            for( ; sbindex < lim; sbindex++) {
+                if(!scenebuffers[sbindex].dynamic) {
                     break;
                 }
-                texgrp = &tex_grp_itr;
+            }
+            if(sbindex == lim) {
+                scenebuffers.push_back(VertexList());
             }
         }
-
-        if (texgrp == nullptr) {
-            MaterialGroup::TextureGroup temp;
-            matgrp->texture_groups.push_back(std::move(temp));
-            texgrp = &matgrp->texture_groups.back();
-
-            // Loop through and add all the texture indicies.
-            for (size_t i = 0; i < buffer_group->textures.size(); ++i) {
-                texgrp->texture_indicies.push_back(matgrp->material.AddTexture(buffer_group->textures[i]));
-            }
-            //texgrp->texture_indicies.push_back(0);
+        VertexList& vlist = scenebuffers[sbindex];
+        MeshRefData *mrd = new MeshRefData(mesh, sbindex);
+        size_t sz = mesh->GetMeshGroupCount();
+        size_t vofs = vlist.vertexcount, iofs = vlist.indexcount;
+        size_t vcount = 0;
+        size_t meindex = vlist.meshinfo.size();
+        mrd->entry_index = meindex;
+        vlist.meshinfo.push_back(RenderEntryList());
+        vlist.update = true;
+        RenderEntryList& rlist = vlist.meshinfo[meindex];
+        rlist.vertexoffset = vofs;
+        rlist.meshptr = mesh;
+        for(size_t i = 0; i < sz; i++) {
+            std::shared_ptr<resource::MeshGroup> mg = mesh->GetMeshGroup(i).lock();
+            rlist.vertlists.push_back({mg->verts.size(), mg->indicies.size(), 0, iofs});
+            LOGMSGC(DEBUG) << "RL #" << rlist.vertlists.size() << " at " << vofs << ", " << iofs;
+            vcount += mg->verts.size();
+            iofs += mg->indicies.size();
         }
-
-        MaterialGroup::TextureGroup::RenderableGroup* rengrp = nullptr;
-        // If we made it then add entity instances based on the meshes being the same.
-        for (MaterialGroup::TextureGroup::RenderableGroup& ren_grp_itr : texgrp->renderable_groups) {
-            if ((ren_grp_itr.renderable->GetMesh() == ren->GetMesh()) && (ren_grp_itr.buffer_group_index == i)) {
-                rengrp = &ren_grp_itr;
-                rengrp->instances.push_back(entity_id);
-                if (ren->GetAnimation()) {
-                    rengrp->animations[entity_id] = ren->GetAnimation();
-                }
-                break;
-            }
-        }
-        if (rengrp == nullptr) {
-            MaterialGroup::TextureGroup::RenderableGroup temp;
-            temp.renderable = ren;
-            if (ren->GetAnimation()) {
-                temp.animations[entity_id] = ren->GetAnimation();
-            }
-
-            temp.buffer_group_index = i;
-            temp.instances.push_back(entity_id);
-
-            texgrp->renderable_groups.push_back(std::move(temp));
-        }
+        vlist.vertexcount = vofs + vcount;
+        vlist.indexcount = iofs;
+        mesh_refs[mesh.get()].reset(mrd);
     }
-    return true;
+    else {
+        LOGMSGC(DEBUG) << "Reference mesh for " << lstat.entity;
+    }
+    lstat.flags |= 1;
 }
 
-// to be removed
-void RenderSystem::RemoveRenderable(const id_t entity_id) {
+void RenderSystem::RenderablesUpdate(double fdelta) {
     auto &sysc = game.GetSystemComponent();
-    if(sysc.Has<Component::Renderable>(entity_id)) {
-        auto matgrp_itr = this->material_groups.begin();
-        while (matgrp_itr != this->material_groups.end()) {
-            auto texgrp_itr = matgrp_itr->texture_groups.begin();
-            while (texgrp_itr != matgrp_itr->texture_groups.end()) {
-
-                auto rengrp_itr = texgrp_itr->renderable_groups.begin();
-                while (rengrp_itr != texgrp_itr->renderable_groups.end()) {
-                    // Check if the renderblae is the one we are looking for an remove it.
-                    // <3 renderblaes ^
-                    if (rengrp_itr->renderable == sysc.GetSharedPtr<Component::Renderable>(entity_id)) {
-                        rengrp_itr = texgrp_itr->renderable_groups.erase(rengrp_itr);
-                    }
-                    else {
-                        ++rengrp_itr;
-                    }
-                }
-
-                // Check if the texture group is empty and remove it from the list.
-                if (texgrp_itr->renderable_groups.size() == 0) {
-                    texgrp_itr = matgrp_itr->texture_groups.erase(texgrp_itr);
-                }
-                else {
-                    ++texgrp_itr;
-                }
-            }
-
-            // Check if the material group is empty and remove it from the list.
-            if (matgrp_itr->texture_groups.size() == 0) {
-                matgrp_itr = this->material_groups.erase(matgrp_itr);
-            }
-            else {
-                ++matgrp_itr;
+    auto &bits = sysc.Bitmap<Component::Renderable>();
+    size_t endc = bits.size();
+    for(auto wren_itr = loaded_renderables.begin(); wren_itr != loaded_renderables.end(); wren_itr++) {
+        if(wren_itr->status.expired()) {
+            LOGMSGC(DEBUG) << "Removed Renderable";
+            wren_itr = loaded_renderables.erase(wren_itr);
+            scene_rebuild = true;
+            continue;
+        }
+    }
+    for(auto ci = bits.enumerator(endc); *ci < endc; ++ci) {
+        Renderable &render = sysc.Get<Component::Renderable>(*ci);
+        if(!render.loadstatus) {
+            LOGMSGC(DEBUG) << "Loading Renderable: " << *ci;
+            auto loader = std::make_shared<LoadStatus>();
+            loader->entity = *ci;
+            render.loadstatus = loader;
+            loaded_renderables.push_back(SceneEntry(loader));
+            scene_rebuild = true;
+        }
+        else {
+            if( (render.loadstatus->flags) == 0 ) {
+                scene_rebuild = true;
             }
         }
-        sysc.Remove<Component::Renderable>(entity_id);
-        return;
+        auto const &anim = render.GetAnimation();
+        if(anim) {
+            anim->UpdateAnimation(fdelta);
+        }
     }
 }
-*/
+
+void RenderSystem::RebuildScene() {
+    LOGMSGC(DEBUG) << "Rebuilding scene";
+    scene_rebuild = false;
+    auto &sysc = game.GetSystemComponent();
+    for(auto ri = mesh_refs.begin(); ri != mesh_refs.end(); ri++) {
+        if((*ri).second->mesh.expired()) {
+            ri = mesh_refs.erase(ri);
+            LOGMSGC(DEBUG) << "Mesh expired";
+            continue;
+        }
+    }
+    for(auto wren_itr = loaded_renderables.begin(); wren_itr != loaded_renderables.end(); wren_itr++) {
+        if(wren_itr->status.expired()) {
+            LOGMSGC(DEBUG) << "Removed Renderable (LATE)";
+            wren_itr = loaded_renderables.erase(wren_itr);
+            continue;
+        }
+        auto lren = wren_itr->status.lock();
+        auto &ren = sysc.Get<Component::Renderable>(lren->entity);
+        if(lren->flags == 0) {
+            ActivateMesh(ren.mesh, *lren);
+        }
+    }
+    for(auto &vl : this->scenebuffers) {
+        vl.Update();
+    }
+}
 
 void RenderSystem::HandleEvents(frame_tp timepoint) {
     auto now = game.GetOS().GetTime().count();
@@ -1083,15 +1029,10 @@ void RenderSystem::HandleEvents(frame_tp timepoint) {
         this->dyn_textures.remove(*tex);
     }
     this->rem_textures.clear();
-    auto &sysc = game.GetSystemComponent();
-    auto &bits = sysc.Bitmap<Component::Renderable>();
-    size_t endc = bits.size();
-    for (auto ren = bits.enumerator(endc); *ren < endc; ++ren) {
-        auto &renc = sysc.Get<Component::Renderable>(*ren);
-        if (renc.GetAnimation()) {
-            renc.GetAnimation()->UpdateAnimation(delta * 1E-9);
-        }
-    }
+    RenderablesUpdate(delta * 1E-9);
+
+    if(scene_rebuild) RebuildScene();
+
     UpdateModelMatrices(timepoint);
 };
 

@@ -32,9 +32,13 @@ namespace trillek {
 
 class Transform;
 
+namespace resource {
+class Mesh;
+}
 namespace gui {
 class GuiSystem;
 }
+
 namespace graphics {
 
 enum class RenderCmd : unsigned int;
@@ -45,32 +49,18 @@ class Animation;
 class LightBase;
 class RenderList;
 
-struct MaterialGroup {
-    Material material;
-    struct TextureGroup {
-        std::vector<size_t> texture_indicies;
-        struct RenderableGroup {
-            std::shared_ptr<Renderable> renderable;
-            std::map<id_t, std::shared_ptr<Animation>> animations;
-            std::list<id_t> instances;
-            size_t buffer_group_index;
-        };
-        std::list<RenderableGroup> renderable_groups;
-    };
-    std::list<TextureGroup> texture_groups;
+struct LoadStatus {
+    LoadStatus() :
+        flags(0), meshid(0), entity(0) {}
+    uint32_t flags;
+    uint32_t meshid;
+    id_t entity;
 };
 
 struct GUIVertex {
     float x, y;
     float ts, tt;
     uint8_t c[4];
-};
-
-struct VertexListEntry {
-    uint32_t indexcount;
-    uint32_t vertexcount;
-    uint32_t textureref;
-    uint32_t offset;
 };
 
 struct RenderEntry {
@@ -355,6 +345,9 @@ private:
     }
 
     void UpdateModelMatrices(const frame_tp& timepoint);
+    void RenderablesUpdate(double);
+    void ActivateMesh(std::shared_ptr<resource::Mesh>, LoadStatus&);
+    void RebuildScene();
 
     int gl_version[3];
     int debugmode;
@@ -394,7 +387,55 @@ private:
     std::map<uint32_t, std::shared_ptr<GraphicsBase>> graphics_references;
     std::map<unsigned int, std::map<std::string, std::shared_ptr<GraphicsBase>>> graphics_instances;
     std::map<unsigned int, glm::mat4> model_matrices;
-    std::list<MaterialGroup> material_groups;
+
+    class SceneEntry final {
+    public:
+        SceneEntry(std::weak_ptr<LoadStatus> ls) : status(ls) { }
+        ~SceneEntry() { }
+        SceneEntry(const SceneEntry&) = delete;
+        SceneEntry& operator=(const SceneEntry&) = delete;
+        SceneEntry(SceneEntry&& that) :
+            status(std::move(that.status)),
+            textures(std::move(that.textures)) { }
+        SceneEntry& operator=(SceneEntry&& that) {
+            status = std::move(that.status);
+            textures = std::move(that.textures);
+            return *this;
+        }
+    public:
+        std::weak_ptr<LoadStatus> status;
+        std::vector<Texture> textures;
+    };
+
+    std::list<SceneEntry> loaded_renderables;
+    std::vector<VertexList> scenebuffers;
+
+    class MeshRefData final {
+    public:
+        MeshRefData() : listid(0), entry_index(0) {}
+        MeshRefData(std::weak_ptr<resource::Mesh> m, uint32_t l) :
+            mesh(m), listid(l), entry_index(0) {}
+        ~MeshRefData();
+        MeshRefData(const MeshRefData&) = delete;
+        MeshRefData(MeshRefData&& that) {
+            mesh = std::move(that.mesh);
+            listid = that.listid;
+            entry_index = that.entry_index;
+        }
+        MeshRefData& operator=(const MeshRefData&) = delete;
+        MeshRefData& operator=(MeshRefData&& that) {
+            mesh = std::move(that.mesh);
+            listid = that.listid;
+            entry_index = that.entry_index;
+            return *this;
+        }
+        std::weak_ptr<resource::Mesh> mesh;
+        uint32_t listid;
+        uint32_t entry_index;
+    };
+    std::map<resource::Mesh*, std::unique_ptr<MeshRefData>> mesh_refs;
+
+    bool scene_rebuild;
 };
 
 /**

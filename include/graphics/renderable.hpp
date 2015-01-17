@@ -17,12 +17,13 @@ class PixelBuffer;
 
 namespace graphics {
 
-class Shader;
-class Texture;
+class RenderSystem;
+struct LoadStatus;
 class Animation;
 
 class Renderable final : public ComponentBase {
 public:
+    friend class RenderSystem;
     Renderable();
     ~Renderable();
 
@@ -71,8 +72,10 @@ public:
      */
     bool Initialize(const std::vector<Property> &properties);
 private:
-    std::shared_ptr<resource::Mesh> mesh;
+    std::shared_ptr<LoadStatus> loadstatus;
 
+    std::string shader_name;
+    std::shared_ptr<resource::Mesh> mesh;
     std::shared_ptr<Animation> animation;
 
     std::vector<bool> set_inst_textures;

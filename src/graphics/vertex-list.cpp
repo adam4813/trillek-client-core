@@ -1,5 +1,6 @@
 
 #include "graphics/vertex-list.hpp"
+#include "resources/mesh.hpp"
 #include "logging.hpp"
 
 namespace trillek {
@@ -11,7 +12,45 @@ VertexList::VertexList()
     buf[0] = 0;
     buf[1] = 0;
     vertexsize = 0;
+    indexcount = 0;
+    vertexcount = 0;
+    update = false;
+    dynamic = false;
 }
+VertexList::VertexList(VertexList&& that) {
+    vao = that.vao;
+    buf[0] = that.buf[0];
+    buf[1] = that.buf[1];
+    format = that.format;
+    vertexsize = that.vertexsize;
+    indexcount = that.indexcount;
+    vertexcount = that.vertexcount;
+    update = that.update;
+    dynamic = that.dynamic;
+    that.vao = 0;
+    that.buf[0] = 0;
+    that.buf[1] = 0;
+    that.vertexsize = 0;
+    that.vertexcount = 0;
+    that.indexcount = 0;
+}
+VertexList& VertexList::operator=(VertexList&& that) {
+    vao = that.vao;
+    buf[0] = that.buf[0];
+    buf[1] = that.buf[1];
+    format = that.format;
+    vertexsize = that.vertexsize;
+    indexcount = that.indexcount;
+    vertexcount = that.vertexcount;
+    update = that.update;
+    dynamic = that.dynamic;
+    that.vao = 0;
+    that.buf[0] = 0;
+    that.buf[1] = 0;
+    vertexsize = 0;
+    return *this;
+}
+
 VertexList::~VertexList() {
     LOGMSGC(DEBUG) << "~VertexList()";
     Release();
@@ -172,6 +211,74 @@ void VertexList::LoadVertexData(void * datablock, uint32_t size, uint32_t count)
 void VertexList::LoadIndexData(uint32_t * datablock, uint32_t count) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->buf[1]); // Bind the index buffer.
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * count, datablock, GL_DYNAMIC_DRAW);
+}
+void VertexList::Update() {
+    if(!update) {
+        return;
+    }
+    if(!this->vao) {
+        Generate();
+        format = VEC3D_NfCTW;
+        Configure();
+    }
+    if(indexcount == 0 && vertexcount == 0) {
+        Release();
+        return;
+    }
+    glBindVertexArray(this->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, this->buf[0]); // Bind the vertex buffer.
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->buf[1]); // Bind the index buffer.
+    CheckGLError();
+    glBufferData(GL_ARRAY_BUFFER, sizeof(resource::VertexData) * vertexcount, nullptr, dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indexcount, nullptr, dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
+    CheckGLError();
+    resource::VertexData *verts = reinterpret_cast<resource::VertexData*>(
+        glMapBufferRange(GL_ARRAY_BUFFER, 0,
+            sizeof(resource::VertexData) * vertexcount,
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
+    CheckGLError();
+    if(verts == nullptr) {
+        LOGMSGC(WARNING) << "vertex buffer map failed";
+        return;
+    }
+    uint32_t *inds = reinterpret_cast<uint32_t*>(
+        glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0,
+            sizeof(uint32_t) * vertexcount,
+            GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
+    CheckGLError();
+    if(inds == nullptr) {
+        glUnmapBuffer(GL_ARRAY_BUFFER);
+        LOGMSGC(WARNING) << "index buffer map failed";
+        return;
+    }
+    LOGMSGC(DEBUG) << "updating buffers";
+    for(auto &mi : this->meshinfo) {
+        if(!mi.meshptr.expired()) {
+            std::shared_ptr<resource::Mesh> mesh = mi.meshptr.lock();
+            resource::VertexData *vbase  = verts + mi.vertexoffset;
+            for(size_t vli = 0; vli < mi.vertlists.size(); vli++) {
+                auto &vl = mi.vertlists[vli];
+                auto mg = mesh->GetMeshGroup(vli).lock();
+                resource::VertexData *vsrc = mg->verts.data();
+                for(size_t x = 0; x < vl.vertexcount; x++) {
+                    *vbase = *vsrc;
+                    vbase++; vsrc++;
+                }
+                uint32_t *ibase  = inds + vl.offset;
+                uint32_t *isrc = mg->indicies.data();
+                for(size_t x = 0; x < vl.indexcount; x++) {
+                    *ibase = (*isrc) + mi.vertexoffset;
+                    ibase++; isrc++;
+                }
+            }
+        }
+        else {
+            LOGMSGC(WARNING) << "Update to GPU, bad Mesh pointer";
+        }
+    }
+    update = false;
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glUnmapBuffer(GL_ELEMENT_ARRAY_BUFFER);
 }
 
 } // namespace graphics

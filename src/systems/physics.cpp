@@ -125,6 +125,7 @@ void PhysicsSystem::HandleEvents(frame_tp timepoint) {
             if (health == 0) {
                 //kill entity
                 LOGMSG(INFO) << "Entity #" << entity_id << " should die now";
+                Remove<Component::Renderable>(entity_id);
                 // set helth to 300
                 Update<Component::Health>(entity_id, 300);
                 // set immunity
