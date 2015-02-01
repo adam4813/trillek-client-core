@@ -886,10 +886,10 @@ RenderSystem::MeshRefData::~MeshRefData() {
     LOGMSG(DEBUG) << "~MeshRefData()";
 }
 
-void RenderSystem::ActivateMesh(std::shared_ptr<resource::Mesh> mesh, LoadStatus& lstat) {
+void RenderSystem::ActivateMesh(std::shared_ptr<resource::Mesh> mesh, SceneEntry& ent, LoadStatus& lstat) {
     auto mref = mesh_refs.find(mesh.get());
     if(mref == mesh_refs.end()) {
-        LOGMSGC(DEBUG) << "Loading new mesh for " << lstat.entity;
+        LOGMSGC(DEBUG) << "Loading new mesh for " << ent.entity;
         size_t sbindex = 0;
         if(mesh->IsDynamic()) {
             sbindex = scenebuffers.size();
@@ -931,7 +931,7 @@ void RenderSystem::ActivateMesh(std::shared_ptr<resource::Mesh> mesh, LoadStatus
         mesh_refs[mesh.get()].reset(mrd);
     }
     else {
-        LOGMSGC(DEBUG) << "Reference mesh for " << lstat.entity;
+        LOGMSGC(DEBUG) << "Reference mesh for " << ent.entity;
     }
     lstat.flags |= 1;
 }
@@ -953,9 +953,9 @@ void RenderSystem::RenderablesUpdate(double fdelta) {
         if(!render.loadstatus) {
             LOGMSGC(DEBUG) << "Loading Renderable: " << *ci;
             auto loader = std::make_shared<LoadStatus>();
-            loader->entity = *ci;
             render.loadstatus = loader;
             loaded_renderables.push_back(SceneEntry(loader));
+            loaded_renderables.back().entity = *ci;
             scene_rebuild = true;
         }
         else {
@@ -988,9 +988,9 @@ void RenderSystem::RebuildScene() {
             continue;
         }
         auto lren = wren_itr->status.lock();
-        auto &ren = sysc.Get<Component::Renderable>(lren->entity);
-        if(lren->flags == 0) {
-            ActivateMesh(ren.mesh, *lren);
+        auto &ren = sysc.Get<Component::Renderable>(wren_itr->entity);
+        if((lren->flags & 1) == 0) {
+            ActivateMesh(ren.mesh, *wren_itr, *lren);
         }
     }
     for(auto &vl : this->scenebuffers) {

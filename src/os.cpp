@@ -335,4 +335,18 @@ void OS::SetMousePosition(double x, double y) {
     glfwSetCursorPos(this->window, x, y);
 }
 
+void SystemSystem::HandleEvents(frame_tp timepoint) {
+    if(!glfw_os->Closing()) {
+        glfw_os->OSMessageLoop();
+    }
+}
+
+SystemSystem::~SystemSystem() {
+    if(glfw_os) {
+        glfw_os->MakeCurrent();
+        glfw_os->Terminate();
+
+    }
+}
+
 } // End of trillek

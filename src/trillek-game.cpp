@@ -31,7 +31,7 @@ void TrillekGame::Terminate() {
     lua_sys.reset();
     gl_sys_ptr.reset();
     fake_system.reset();
-    glfw_os.reset();
+    os_system.reset();
     shared_component.reset();
     system_component.reset();
     system_value_component.reset();
@@ -44,14 +44,14 @@ void TrillekGame::Initialize() {
     scheduler.reset(new TrillekScheduler);
     fake_system.reset(new FakeSystem);
     phys_sys.reset(new physics::PhysicsSystem);
-    glfw_os.reset(new OS);
+    os_system.reset(new SystemSystem);
     shared_component.reset(new component::Shared);
     system_component.reset(new component::System);
     system_value_component.reset(new component::SystemValue);
     lua_sys.reset(new script::LuaSystem());
     gl_sys_ptr.reset(new graphics::RenderSystem());
     gl_sys_ptr->RegisterTypes();
-    gui_system.reset(new gui::GuiSystem(*glfw_os.get(), *gl_sys_ptr.get()));
+    gui_system.reset(new gui::GuiSystem(GetOS(), *gl_sys_ptr.get()));
     close_window = false;
     engine_sys.reset(new MetaEngineSystem);
     vcomputer_system.reset(new VComputerSystem);
@@ -63,6 +63,10 @@ sound::System& TrillekGame::GetSoundSystem() {
 
 graphics::RenderSystem& TrillekGame::GetGraphicSystem() {
     return *gl_sys_ptr.get();
+}
+
+OS& TrillekGame::GetOS() {
+    return *(os_system->glfw_os).get();
 }
 
 id_t TrillekGame::GetCameraEntity() {
