@@ -31,6 +31,7 @@ struct RenderEntryList {
     uint32_t meshref;
     uint32_t extension;
     uint32_t vertexoffset;
+    uint32_t indexoffset;
     std::weak_ptr<resource::Mesh> meshptr;
     std::vector<VertexListEntry> vertlists;
 };

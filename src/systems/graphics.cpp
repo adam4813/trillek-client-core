@@ -26,11 +26,13 @@ RenderSystem::RenderSystem()
     this->current_ref = 1;
     this->camera_id = 0;
     this->debugmode = 0;
+    this->debugid = 0;
     this->window_height = 480;
     this->window_width = 640;
     this->frame_drop_count = 0;
     this->transformsvalid = false;
     this->scene_rebuild = false;
+    this->tracedraw = false;
     this->gui_interface.reset(new RenderSystem::GuiRenderInterface(this));
 
     Shader::InitializeTypes();
@@ -79,6 +81,8 @@ const int* RenderSystem::Start(const unsigned int width, const unsigned int heig
             LOGMSGC(INFO) << "Copying transform of entity " << entity_id;
         }
     );
+
+    this->tracedraw = true;
 
     // Activate the lowest ID or first camera and get the initial view matrix.
     auto &sysc = game.GetSystemComponent();
@@ -310,7 +314,7 @@ void RenderSystem::RunBatch() const {
 
     if(!this->frame_drop) {
         RenderScene();
-
+        this->tracedraw = false;
         game.GetOS().SwapBuffers();
     }
     // If the user closes the window, we notify all the systems
@@ -608,37 +612,73 @@ void RenderSystem::RenderGUI() const {
 
 void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_matrix) const {
     if(!transformsvalid) return;
-    /*
-    for (auto matgrp : this->material_groups) {
-        const auto& shader = matgrp.material.GetShader();
-        shader->Use();
+    GLuint lastshader = 0;
+    GLuint lastvao = 0;
+    GLint u_model_loc = -1;
+    GLint u_istex_loc = -1;
+    GLint u_hl_loc = -1;
+    GLint u_animatrix_loc = -1;
+    GLint u_animate_loc = -1;
+    for(auto wren_itr = loaded_renderables.begin(); wren_itr != loaded_renderables.end(); wren_itr++) {
+        auto ref = mesh_refs.find(wren_itr->meshid);
+        if(tracedraw) {
+            LOGMSGC(DEBUG_FINE) << "Draw: Entity: " << wren_itr->entity;
+        }
+        if(ref != mesh_refs.end()) {
+            const VertexList &vlist = scenebuffers.at(ref->second->listid);
+            if(vlist.shader) {
+                if(vlist.vao != lastvao) {
+                    vlist.Bind();
+                    lastvao = vlist.vao;
+                }
+                if(vlist.shader->GetProgram() != lastshader) {
+                    lastshader = vlist.shader->GetProgram();
+                    vlist.shader->Use();
+                    auto& shader = *vlist.shader;
+                    glUniformMatrix4fv(shader.Uniform("view"), 1, GL_FALSE, view_matrix);
+                    glUniformMatrix4fv(shader.Uniform("projection"), 1, GL_FALSE, proj_matrix);
+                    u_model_loc = shader.Uniform("model");
+                    u_istex_loc = shader.Uniform("textured");
+                    u_hl_loc = shader.Uniform("highlt");
+                    u_animatrix_loc = shader.Uniform("animation_matrix");
+                    u_animate_loc = shader.Uniform("animated");
+                }
+                glUniformMatrix4fv(u_model_loc, 1, GL_FALSE, &this->model_matrices.at(wren_itr->entity)[0][0]);
+                if(wren_itr->anim) {
+                    glUniform1i(u_animate_loc, 1);
+                    auto animmatricies = wren_itr->anim->animation_matricies.data();
+                    glUniformMatrix4fv(u_animatrix_loc, wren_itr->anim->animation_matricies.size(), GL_FALSE, (float*)animmatricies);
+                }
+                else {
+                    glUniform1i(u_animate_loc, 0);
+                }
 
-        glUniformMatrix4fv((*shader)("view"), 1, GL_FALSE, view_matrix);
-        glUniformMatrix4fv((*shader)("projection"), 1, GL_FALSE, proj_matrix);
-        GLint u_model_loc = shader->Uniform("model");
-        GLint u_istex_loc = shader->Uniform("textured");
-        GLint u_animatrix_loc = shader->Uniform("animation_matrix");
-        GLint u_animate_loc = shader->Uniform("animated");
-
-        for (const auto& texgrp : matgrp.texture_groups) {
-            // Activate all textures for this texture group.
-            bool hastex = false;
-            for (size_t tex_index = 0; tex_index < texgrp.texture_indicies.size(); ++tex_index) {
-                if(matgrp.material.ActivateTexture(texgrp.texture_indicies[tex_index], tex_index)) {
-                    hastex = true;
+                const RenderEntryList &rel = vlist.meshinfo.at(ref->second->entry_index);
+                if(tracedraw) {
+                    LOGMSGC(DEBUG_FINE) << "Draw: Selected index: " << ref->second->entry_index;
+                }
+                int h = 0;
+                for(auto &entr : rel.vertlists) {
+                    h++;
+                    if(entr.textureref) {
+                    }
+                    else {
+                        glUniform1i(u_istex_loc, 0);
+                    }
+                    if(debugid == h) {
+                        glUniform1i(u_hl_loc, 1);
+                    }
+                    else {
+                        glUniform1i(u_hl_loc, 0);
+                    }
+                    if(tracedraw) {
+                        LOGMSGC(DEBUG_FINE) << "Draw: DrawCall " << entr.indexcount << " at " << entr.offset;
+                    }
+                    glDrawElements(GL_TRIANGLES, entr.indexcount, GL_UNSIGNED_INT, ((void*)(entr.offset << 2)) );
                 }
             }
-            glUniform1i(u_istex_loc, hastex ? 1 : 0);
-
-            // TODO rewrite
-            for (size_t tex_index = 0; tex_index < texgrp.texture_indicies.size(); ++tex_index) {
-                Material::DeactivateTexture(tex_index);
-            }
         }
-
-        shader->UnUse();
     }
-    */
 }
 
 void RenderSystem::RenderDepthOnlyPass(const float *view_matrix, const float *proj_matrix) const {
@@ -828,6 +868,10 @@ void RenderSystem::RenderPostPass(std::shared_ptr<Shader> postshader) const {
     Shader::UnUse();
 }
 
+void RenderSystem::RenderMeshes(bool useshaders, uint32_t layermask) const {
+
+}
+
 void RenderSystem::RegisterStaticParsers() {
     RenderSystem &rensys = *this;
     auto aglambda =  [&rensys] (const rapidjson::Value& node) -> bool {
@@ -886,25 +930,28 @@ RenderSystem::MeshRefData::~MeshRefData() {
     LOGMSG(DEBUG) << "~MeshRefData()";
 }
 
-void RenderSystem::ActivateMesh(std::shared_ptr<resource::Mesh> mesh, SceneEntry& ent, LoadStatus& lstat) {
+void RenderSystem::ActivateMesh(std::shared_ptr<resource::Mesh> mesh, SceneEntry& ent, std::shared_ptr<Shader> shade) {
     auto mref = mesh_refs.find(mesh.get());
     if(mref == mesh_refs.end()) {
         LOGMSGC(DEBUG) << "Loading new mesh for " << ent.entity;
         size_t sbindex = 0;
+
         if(mesh->IsDynamic()) {
             sbindex = scenebuffers.size();
             scenebuffers.push_back(VertexList());
             scenebuffers[sbindex].dynamic = true;
+            scenebuffers[sbindex].shader = shade;
         }
         else {
             size_t lim = scenebuffers.size();
             for( ; sbindex < lim; sbindex++) {
-                if(!scenebuffers[sbindex].dynamic) {
+                if( (!scenebuffers[sbindex].dynamic) && (scenebuffers[sbindex].shader.get() == shade.get())) {
                     break;
                 }
             }
             if(sbindex == lim) {
                 scenebuffers.push_back(VertexList());
+                scenebuffers[sbindex].shader = shade;
             }
         }
         VertexList& vlist = scenebuffers[sbindex];
@@ -913,18 +960,27 @@ void RenderSystem::ActivateMesh(std::shared_ptr<resource::Mesh> mesh, SceneEntry
         size_t vofs = vlist.vertexcount, iofs = vlist.indexcount;
         size_t vcount = 0;
         size_t meindex = vlist.meshinfo.size();
+        LOGMSGC(DEBUG) << "Mesh offset V:" << vofs << " I:" << iofs;
         mrd->entry_index = meindex;
         vlist.meshinfo.push_back(RenderEntryList());
         vlist.update = true;
         RenderEntryList& rlist = vlist.meshinfo[meindex];
         rlist.vertexoffset = vofs;
+        rlist.indexoffset = iofs;
         rlist.meshptr = mesh;
         for(size_t i = 0; i < sz; i++) {
             std::shared_ptr<resource::MeshGroup> mg = mesh->GetMeshGroup(i).lock();
-            rlist.vertlists.push_back({mg->verts.size(), mg->indicies.size(), 0, iofs});
-            LOGMSGC(DEBUG) << "RL #" << rlist.vertlists.size() << " at " << vofs << ", " << iofs;
-            vcount += mg->verts.size();
-            iofs += mg->indicies.size();
+            size_t x = rlist.vertlists.size();
+            rlist.vertlists.push_back(VertexListEntry());
+            auto &cvle = rlist.vertlists.at(x);
+            cvle.vertexcount = mg->verts.size();
+            cvle.indexcount = mg->indicies.size();
+            cvle.textureref = 0;
+            cvle.offset = iofs;
+            LOGMSGC(DEBUG) << "RL #" << rlist.vertlists.size() << " at " << vofs+vcount << ", " << iofs
+                << " counts V:" << cvle.vertexcount << " I:" << cvle.indexcount;
+            vcount += cvle.vertexcount;
+            iofs += cvle.indexcount;
         }
         vlist.vertexcount = vofs + vcount;
         vlist.indexcount = iofs;
@@ -933,7 +989,7 @@ void RenderSystem::ActivateMesh(std::shared_ptr<resource::Mesh> mesh, SceneEntry
     else {
         LOGMSGC(DEBUG) << "Reference mesh for " << ent.entity;
     }
-    lstat.flags |= 1;
+    ent.meshid = mesh.get();
 }
 
 void RenderSystem::RenderablesUpdate(double fdelta) {
@@ -956,6 +1012,7 @@ void RenderSystem::RenderablesUpdate(double fdelta) {
             render.loadstatus = loader;
             loaded_renderables.push_back(SceneEntry(loader));
             loaded_renderables.back().entity = *ci;
+            loaded_renderables.back().anim = render.GetAnimation();
             scene_rebuild = true;
         }
         else {
@@ -989,8 +1046,10 @@ void RenderSystem::RebuildScene() {
         }
         auto lren = wren_itr->status.lock();
         auto &ren = sysc.Get<Component::Renderable>(wren_itr->entity);
+        auto shade = Get<Shader>(ren.shader_name);
         if((lren->flags & 1) == 0) {
-            ActivateMesh(ren.mesh, *wren_itr, *lren);
+            ActivateMesh(ren.mesh, *wren_itr, shade);
+            lren->flags |= 1;
         }
     }
     for(auto &vl : this->scenebuffers) {

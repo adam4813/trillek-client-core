@@ -27,6 +27,8 @@ VertexList::VertexList(VertexList&& that) {
     vertexcount = that.vertexcount;
     update = that.update;
     dynamic = that.dynamic;
+    shader = std::move(that.shader);
+    meshinfo = std::move(that.meshinfo);
     that.vao = 0;
     that.buf[0] = 0;
     that.buf[1] = 0;
@@ -44,6 +46,8 @@ VertexList& VertexList::operator=(VertexList&& that) {
     vertexcount = that.vertexcount;
     update = that.update;
     dynamic = that.dynamic;
+    shader = std::move(that.shader);
+    meshinfo = std::move(that.meshinfo);
     that.vao = 0;
     that.buf[0] = 0;
     that.buf[1] = 0;
@@ -52,7 +56,7 @@ VertexList& VertexList::operator=(VertexList&& that) {
 }
 
 VertexList::~VertexList() {
-    LOGMSGC(DEBUG) << "~VertexList()";
+    if(vao) LOGMSGC(DEBUG) << "~VertexList()";
     Release();
 }
 
@@ -127,7 +131,7 @@ void VertexList::Configure() {
         glVertexAttribPointer(attrnum, 2, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
         glEnableVertexAttribArray(attrnum++);
         offset = ((float*)offset) + 2;
-        glVertexAttribPointer(attrnum, 4, GL_UNSIGNED_INT, GL_TRUE, vertexsize, (GLvoid*)offset);
+        glVertexAttribPointer(attrnum, 4, GL_UNSIGNED_INT, GL_FALSE, vertexsize, (GLvoid*)offset);
         glEnableVertexAttribArray(attrnum++);
         offset = ((uint32_t*)offset) + 4;
         glVertexAttribPointer(attrnum, 4, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
@@ -153,23 +157,23 @@ void VertexList::Configure() {
     case VEC3D_NfCTW:
         vertexsize = sizeof(float) * (3+3+4+2+4) + sizeof(uint32_t) * (4);
         // 3 position, 3 normal, 4 color(float), 2 texcoord, 4 Weight index, 4 Weights
-        glVertexAttribPointer(attrnum, 3, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
-        glEnableVertexAttribArray(attrnum++);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
+        glEnableVertexAttribArray(0);
         offset = ((float*)offset) + 3; // move to the next attribute offset
-        glVertexAttribPointer(attrnum, 3, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
-        glEnableVertexAttribArray(attrnum++);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
+        glEnableVertexAttribArray(1);
         offset = ((float*)offset) + 3;
-        glVertexAttribPointer(attrnum, 4, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
-        glEnableVertexAttribArray(attrnum++);
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
+        glEnableVertexAttribArray(2);
         offset = ((float*)offset) + 4;
-        glVertexAttribPointer(attrnum, 2, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
-        glEnableVertexAttribArray(attrnum++);
+        glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
+        glEnableVertexAttribArray(3);
         offset = ((float*)offset) + 2;
-        glVertexAttribPointer(attrnum, 4, GL_UNSIGNED_INT, GL_TRUE, vertexsize, (GLvoid*)offset);
-        glEnableVertexAttribArray(attrnum++);
+        glVertexAttribPointer(4, 4, GL_UNSIGNED_INT, GL_FALSE, vertexsize, (GLvoid*)offset);
+        glEnableVertexAttribArray(4);
         offset = ((uint32_t*)offset) + 4;
-        glVertexAttribPointer(attrnum, 4, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
-        glEnableVertexAttribArray(attrnum++);
+        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
+        glEnableVertexAttribArray(5);
         offset = ((float*)offset) + 4;
         break;
     case VEC2D_CT:
@@ -217,9 +221,8 @@ void VertexList::Update() {
         return;
     }
     if(!this->vao) {
-        Generate();
         format = VEC3D_NfCTW;
-        Configure();
+        Generate();
     }
     if(indexcount == 0 && vertexcount == 0) {
         Release();
@@ -232,6 +235,9 @@ void VertexList::Update() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(resource::VertexData) * vertexcount, nullptr, dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * indexcount, nullptr, dynamic ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW);
     CheckGLError();
+    Configure();
+    CheckGLError();
+
     resource::VertexData *verts = reinterpret_cast<resource::VertexData*>(
         glMapBufferRange(GL_ARRAY_BUFFER, 0,
             sizeof(resource::VertexData) * vertexcount,
@@ -252,29 +258,38 @@ void VertexList::Update() {
         return;
     }
     LOGMSGC(DEBUG) << "updating buffers";
+    resource::VertexData *vbase  = verts;
+    uint32_t *ibase  = inds;
+    uint32_t vindex = 0;
     for(auto &mi : this->meshinfo) {
         if(!mi.meshptr.expired()) {
             std::shared_ptr<resource::Mesh> mesh = mi.meshptr.lock();
-            resource::VertexData *vbase  = verts + mi.vertexoffset;
+            //uint32_t vindex = mi.vertexoffset;
+            LOGMSGC(DEBUG) << "VOffset: " << mi.vertexoffset << ", IOfs: " << mi.indexoffset;
             for(size_t vli = 0; vli < mi.vertlists.size(); vli++) {
                 auto &vl = mi.vertlists[vli];
                 auto mg = mesh->GetMeshGroup(vli).lock();
-                resource::VertexData *vsrc = mg->verts.data();
-                for(size_t x = 0; x < vl.vertexcount; x++) {
-                    *vbase = *vsrc;
-                    vbase++; vsrc++;
-                }
-                uint32_t *ibase  = inds + vl.offset;
-                uint32_t *isrc = mg->indicies.data();
+                LOGMSGC(DEBUG) << "Moving " << vl.vertexcount << " vertices";
+                memcpy(vbase, mg->verts.data(), sizeof(resource::VertexData) * vl.vertexcount);
+                vbase += vl.vertexcount;
+                LOGMSGC(DEBUG) << "Translate " << vl.indexcount << " indices @" << vl.offset << " for " << vindex;
+
+                uint32_t indexlim = vindex + vl.indexcount;
+                const uint32_t *isrc = mg->indicies.data();
                 for(size_t x = 0; x < vl.indexcount; x++) {
-                    *ibase = (*isrc) + mi.vertexoffset;
+                    *ibase = (*isrc) + vindex;
+                    if(*isrc > indexlim) LOGMSGC(DEBUG) << "Index#" << x << " > lim, " << (*isrc);
                     ibase++; isrc++;
                 }
+                vindex += vl.vertexcount;
             }
         }
         else {
             LOGMSGC(WARNING) << "Update to GPU, bad Mesh pointer";
         }
+    }
+    if(vindex < vertexcount) {
+        LOGMSGC(WARNING) << "Load underflow";
     }
     update = false;
     glUnmapBuffer(GL_ARRAY_BUFFER);

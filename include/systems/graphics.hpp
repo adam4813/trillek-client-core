@@ -260,6 +260,12 @@ public:
             case GLFW_KEY_F10:
                 debugmode = (debugmode & ~3) | ((debugmode + 1) & 3);
                 break;
+            case GLFW_KEY_F7:
+                debugid--;
+                break;
+            case GLFW_KEY_F8:
+                debugid++;
+                break;
             }
             break;
         default:
@@ -344,15 +350,19 @@ private:
 
     class SceneEntry;
 
+    void RenderMeshes(bool useshaders, uint32_t layermask) const;
+
     void UpdateModelMatrices(const frame_tp& timepoint);
     void RenderablesUpdate(double);
-    void ActivateMesh(std::shared_ptr<resource::Mesh>, SceneEntry&, LoadStatus&);
+    void ActivateMesh(std::shared_ptr<resource::Mesh>, SceneEntry&, std::shared_ptr<Shader>);
     void RebuildScene();
 
     int gl_version[3];
     int debugmode;
+    int debugid;
     bool frame_drop;
     bool transformsvalid;
+    mutable bool tracedraw;
     uint32_t frame_drop_count;
     ViewMatrixSet vp_center;
     ViewMatrixSet vp_left;
@@ -388,6 +398,8 @@ private:
     std::map<unsigned int, std::map<std::string, std::shared_ptr<GraphicsBase>>> graphics_instances;
     std::map<unsigned int, glm::mat4> model_matrices;
 
+    typedef resource::Mesh* mesh_id_t;
+
     class SceneEntry final {
     public:
         SceneEntry(std::weak_ptr<LoadStatus> ls) : status(ls), meshid(0), entity(0) { }
@@ -396,11 +408,13 @@ private:
         SceneEntry& operator=(const SceneEntry&) = delete;
         SceneEntry(SceneEntry&& that) :
             status(std::move(that.status)),
+            anim(std::move(that.anim)),
             textures(std::move(that.textures)),
             meshid(that.meshid),
             entity(that.entity) { }
         SceneEntry& operator=(SceneEntry&& that) {
             status = std::move(that.status);
+            anim = std::move(that.anim);
             textures = std::move(that.textures);
             meshid = that.meshid;
             entity = that.entity;
@@ -408,8 +422,9 @@ private:
         }
     public:
         std::weak_ptr<LoadStatus> status;
-        uint32_t meshid;
+        mesh_id_t meshid;
         id_t entity;
+        std::shared_ptr<Animation> anim;
         std::vector<std::weak_ptr<Texture>> textures;
     };
 
@@ -439,7 +454,7 @@ private:
         uint32_t listid;
         uint32_t entry_index;
     };
-    std::map<resource::Mesh*, std::unique_ptr<MeshRefData>> mesh_refs;
+    std::map<mesh_id_t, std::unique_ptr<MeshRefData>> mesh_refs;
 
     bool scene_rebuild;
 };
