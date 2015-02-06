@@ -362,7 +362,6 @@ private:
     int debugid;
     bool frame_drop;
     bool transformsvalid;
-    mutable bool tracedraw;
     uint32_t frame_drop_count;
     ViewMatrixSet vp_center;
     ViewMatrixSet vp_left;

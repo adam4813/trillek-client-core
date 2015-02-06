@@ -32,7 +32,6 @@ RenderSystem::RenderSystem()
     this->frame_drop_count = 0;
     this->transformsvalid = false;
     this->scene_rebuild = false;
-    this->tracedraw = false;
     this->gui_interface.reset(new RenderSystem::GuiRenderInterface(this));
 
     Shader::InitializeTypes();
@@ -81,8 +80,6 @@ const int* RenderSystem::Start(const unsigned int width, const unsigned int heig
             LOGMSGC(INFO) << "Copying transform of entity " << entity_id;
         }
     );
-
-    this->tracedraw = true;
 
     // Activate the lowest ID or first camera and get the initial view matrix.
     auto &sysc = game.GetSystemComponent();
@@ -314,7 +311,6 @@ void RenderSystem::RunBatch() const {
 
     if(!this->frame_drop) {
         RenderScene();
-        this->tracedraw = false;
         game.GetOS().SwapBuffers();
     }
     // If the user closes the window, we notify all the systems
@@ -616,14 +612,10 @@ void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_m
     GLuint lastvao = 0;
     GLint u_model_loc = -1;
     GLint u_istex_loc = -1;
-    GLint u_hl_loc = -1;
     GLint u_animatrix_loc = -1;
     GLint u_animate_loc = -1;
     for(auto wren_itr = loaded_renderables.begin(); wren_itr != loaded_renderables.end(); wren_itr++) {
         auto ref = mesh_refs.find(wren_itr->meshid);
-        if(tracedraw) {
-            LOGMSGC(DEBUG_FINE) << "Draw: Entity: " << wren_itr->entity;
-        }
         if(ref != mesh_refs.end()) {
             const VertexList &vlist = scenebuffers.at(ref->second->listid);
             if(vlist.shader) {
@@ -639,7 +631,6 @@ void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_m
                     glUniformMatrix4fv(shader.Uniform("projection"), 1, GL_FALSE, proj_matrix);
                     u_model_loc = shader.Uniform("model");
                     u_istex_loc = shader.Uniform("textured");
-                    u_hl_loc = shader.Uniform("highlt");
                     u_animatrix_loc = shader.Uniform("animation_matrix");
                     u_animate_loc = shader.Uniform("animated");
                 }
@@ -654,9 +645,6 @@ void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_m
                 }
 
                 const RenderEntryList &rel = vlist.meshinfo.at(ref->second->entry_index);
-                if(tracedraw) {
-                    LOGMSGC(DEBUG_FINE) << "Draw: Selected index: " << ref->second->entry_index;
-                }
                 int h = 0;
                 for(auto &entr : rel.vertlists) {
                     h++;
@@ -664,15 +652,6 @@ void RenderSystem::RenderColorPass(const float *view_matrix, const float *proj_m
                     }
                     else {
                         glUniform1i(u_istex_loc, 0);
-                    }
-                    if(debugid == h) {
-                        glUniform1i(u_hl_loc, 1);
-                    }
-                    else {
-                        glUniform1i(u_hl_loc, 0);
-                    }
-                    if(tracedraw) {
-                        LOGMSGC(DEBUG_FINE) << "Draw: DrawCall " << entr.indexcount << " at " << entr.offset;
                     }
                     glDrawElements(GL_TRIANGLES, entr.indexcount, GL_UNSIGNED_INT, ((void*)(entr.offset << 2)) );
                 }

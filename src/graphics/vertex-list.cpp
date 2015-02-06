@@ -131,7 +131,7 @@ void VertexList::Configure() {
         glVertexAttribPointer(attrnum, 2, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
         glEnableVertexAttribArray(attrnum++);
         offset = ((float*)offset) + 2;
-        glVertexAttribPointer(attrnum, 4, GL_UNSIGNED_INT, GL_FALSE, vertexsize, (GLvoid*)offset);
+        glVertexAttribIPointer(attrnum, 4, GL_UNSIGNED_INT, vertexsize, (GLvoid*)offset);
         glEnableVertexAttribArray(attrnum++);
         offset = ((uint32_t*)offset) + 4;
         glVertexAttribPointer(attrnum, 4, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
@@ -169,7 +169,7 @@ void VertexList::Configure() {
         glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
         glEnableVertexAttribArray(3);
         offset = ((float*)offset) + 2;
-        glVertexAttribPointer(4, 4, GL_UNSIGNED_INT, GL_FALSE, vertexsize, (GLvoid*)offset);
+        glVertexAttribIPointer(4, 4, GL_UNSIGNED_INT, vertexsize, (GLvoid*)offset);
         glEnableVertexAttribArray(4);
         offset = ((uint32_t*)offset) + 4;
         glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, vertexsize, (GLvoid*)offset);
@@ -249,7 +249,7 @@ void VertexList::Update() {
     }
     uint32_t *inds = reinterpret_cast<uint32_t*>(
         glMapBufferRange(GL_ELEMENT_ARRAY_BUFFER, 0,
-            sizeof(uint32_t) * vertexcount,
+            sizeof(uint32_t) * indexcount,
             GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
     CheckGLError();
     if(inds == nullptr) {
@@ -257,24 +257,20 @@ void VertexList::Update() {
         LOGMSGC(WARNING) << "index buffer map failed";
         return;
     }
-    LOGMSGC(DEBUG) << "updating buffers";
-    resource::VertexData *vbase  = verts;
-    uint32_t *ibase  = inds;
+    LOGMSGC(DEBUG) << "updating buffer";
+    resource::VertexData *vbase = verts;
+    uint32_t *ibase = inds;
     uint32_t vindex = 0;
     for(auto &mi : this->meshinfo) {
         if(!mi.meshptr.expired()) {
             std::shared_ptr<resource::Mesh> mesh = mi.meshptr.lock();
-            //uint32_t vindex = mi.vertexoffset;
-            LOGMSGC(DEBUG) << "VOffset: " << mi.vertexoffset << ", IOfs: " << mi.indexoffset;
             for(size_t vli = 0; vli < mi.vertlists.size(); vli++) {
                 auto &vl = mi.vertlists[vli];
                 auto mg = mesh->GetMeshGroup(vli).lock();
-                LOGMSGC(DEBUG) << "Moving " << vl.vertexcount << " vertices";
                 memcpy(vbase, mg->verts.data(), sizeof(resource::VertexData) * vl.vertexcount);
                 vbase += vl.vertexcount;
-                LOGMSGC(DEBUG) << "Translate " << vl.indexcount << " indices @" << vl.offset << " for " << vindex;
 
-                uint32_t indexlim = vindex + vl.indexcount;
+                uint32_t indexlim = vindex + vl.vertexcount;
                 const uint32_t *isrc = mg->indicies.data();
                 for(size_t x = 0; x < vl.indexcount; x++) {
                     *ibase = (*isrc) + vindex;
