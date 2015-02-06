@@ -15,7 +15,6 @@ class TrillekScheduler;
 class MetaEngineSystem;
 class FakeSystem;
 class OS;
-class SystemSystem;
 class VComputerSystem;
 
 namespace graphics {
@@ -55,7 +54,6 @@ public:
      * \return OS& the instance
      */
     OS& GetOS();
-    SystemSystem& GetOSSystem() { return *os_system.get(); }
 
     /** \brief Return the physics system instance
      *
@@ -154,7 +152,7 @@ private:
     std::unique_ptr<TrillekScheduler> scheduler;
     std::unique_ptr<FakeSystem> fake_system;
     std::unique_ptr<physics::PhysicsSystem> phys_sys;
-    std::unique_ptr<SystemSystem> os_system;
+    std::unique_ptr<OS> glfw_os;
     std::unique_ptr<VComputerSystem> vcomputer_system;
     std::unique_ptr<component::Shared> shared_component;
     std::unique_ptr<component::System> system_component;

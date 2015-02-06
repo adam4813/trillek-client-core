@@ -80,8 +80,6 @@ int main(int argCount, char **argValues) {
 
     systems.push(&trillek::game.GetVComputerSystem());
 
-    systems.push(&trillek::game.GetOSSystem());
-
     // start the scheduler in another thread
     std::thread tp(
                    &trillek::TrillekScheduler::Initialize,
@@ -97,9 +95,14 @@ int main(int argCount, char **argValues) {
         trillek::game.NotifyCloseWindow();
     }
 */
+    while(!os.Closing()) {
+        os.OSMessageLoop();
+    }
     tp.join();
 
     // Terminating program
+    os.MakeCurrent();
+    os.Terminate();
 
     //jparser.Serialize("common/assets/tests/", "transforms.json", trillek::TransformMap::GetInstance());
     trillek::game.Terminate();
