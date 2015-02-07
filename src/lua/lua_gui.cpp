@@ -121,12 +121,12 @@ using Rocket::Core::String;
 template<>
 struct luaU_Impl<Rocket::Core::String> {
     static Rocket::Core::String luaU_check(lua_State* L, int index) {
-        unsigned x;
+        size_t x;
         const char * cs = lua_tolstring(L, index, &x);
         return String(cs, cs+x);
     }
     static Rocket::Core::String luaU_to(lua_State* L, int index) {
-        unsigned x;
+        size_t x;
         const char * cs = lua_tolstring(L, index, &x);
         return String(cs, cs+x);
     }

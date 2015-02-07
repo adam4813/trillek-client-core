@@ -19,6 +19,7 @@ GuiSystem::GuiSystem(OS &sys, graphics::RenderSystem &gsys)
     instance_id = 0;
 }
 GuiSystem::~GuiSystem() {
+    documents.clear();
     main_context->UnloadAllDocuments();
     main_context.reset();
     CleanUpObjects();
