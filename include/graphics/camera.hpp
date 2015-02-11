@@ -4,7 +4,6 @@
 #include "trillek-game.hpp"
 #include "components/shared-component.hpp"
 #include "components/system-component.hpp"
-#include "systems/transform-system.hpp"
 #include "type-id.hpp"
 #include "transform.hpp"
 #include <memory>

@@ -26,7 +26,6 @@
 
 #include "systems/physics.hpp"
 #include "systems/resource-system.hpp"
-#include "systems/transform-system.hpp"
 #include "util/json-parser.hpp"
 
 namespace trillek {
@@ -91,7 +90,6 @@ void util::JSONPasrser::RegisterTypes() {
     RegisterParser(game.GetGraphicsInstance());
     RegisterParser(sound::System::GetInstance());
     RegisterParser(resource::ResourceMap::GetInstance());
-    RegisterParser(TransformMap::GetInstance());
     RegisterParser(ComponentFactory::GetInstance());
 }
 

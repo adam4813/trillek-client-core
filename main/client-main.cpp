@@ -3,7 +3,6 @@
 #include <thread>
 #include "os.hpp"
 #include "util/json-parser.hpp"
-#include "systems/transform-system.hpp"
 #include "systems/resource-system.hpp"
 #include "systems/physics.hpp"
 #include "systems/meta-engine-system.hpp"
@@ -31,7 +30,6 @@ int main(int argCount, char **argValues) {
     glGetError(); // clear errors
 
     // Call each system's GetInstance to create the initial instance.
-    trillek::TransformMap::GetInstance();
     trillek::resource::ResourceMap::GetInstance();
 
     // start the physics system, must be done before loading any components.

@@ -1,6 +1,5 @@
 #include "trillek-game.hpp"
 #include "components/shared-component.hpp"
-#include "systems/transform-system.hpp"
 #include "systems/sound-system.hpp"
 #include "logging.hpp"
 
