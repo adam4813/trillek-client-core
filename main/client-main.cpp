@@ -35,7 +35,7 @@ int main(int argCount, char **argValues) {
     // start the physics system, must be done before loading any components.
     trillek::game.GetPhysicsSystem().Start();
 
-    trillek::util::JSONPasrser jparser;
+    trillek::util::JSONParser jparser;
 
     if (!jparser.Parse("common/assets/tests/sample.json")) {
         std::cerr << "Error loading JSON configuration file." << std::endl;

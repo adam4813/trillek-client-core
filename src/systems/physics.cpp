@@ -3,6 +3,7 @@
 #include "components/system-component.hpp"
 #include "components/system-component-value.hpp"
 #include "physics/collidable.hpp"
+#include "systems/physics.hpp"
 #include <bullet/BulletCollision/Gimpact/btGImpactShape.h>
 #include <bullet/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 #include "logging.hpp"

@@ -15,8 +15,8 @@
 #include "hardware/cpu.hpp"
 #include "interaction.hpp"
 
-#include "components/component-factory.hpp"
 #include "components/component-templates.hpp"
+#include "components/component-factory.hpp"
 #include "physics/collidable.hpp"
 #include "resources/md5mesh.hpp"
 #include "resources/md5anim.hpp"
@@ -58,39 +58,37 @@ void graphics::RenderSystem::RegisterTypes() {
     RegisterListResolvers();
 }
 
-void ComponentFactory::RegisterTypes() {
-    auto& shared = game.GetSharedComponent();
-    auto& system = game.GetSystemComponent();
-    auto& system_value = game.GetSystemValueComponent();
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::Collidable>(system));
-    RegisterComponentType(ComponentAdder<SHARED,Component::Velocity, bool>(shared));
-    RegisterComponentType(ComponentAdder<SHARED,Component::VelocityMax, bool>(shared));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::ReferenceFrame,id_t>(system_value));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::IsReferenceFrame,bool>(system_value));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::CombinedVelocity>(system));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::OxygenRate,float>(system_value));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::Health,uint32_t>(system_value));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::Movable,bool>(system_value));
-    RegisterComponentType(ComponentAdder<SHARED,Component::GraphicTransform,bool>(shared));
-    RegisterComponentType(ComponentAdder<SHARED,Component::GameTransform,bool>(shared));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::VComputer>(system));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::VDisplay>(system));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::VKeyboard>(system));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::Renderable>(system));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::Light>(system));
-    RegisterComponentType(ComponentAdder<SYSTEM,Component::Camera>(system));
-    RegisterSystem<graphics::CameraBase>(&game.GetGraphicSystem());
-}
-
 void gui::GuiSystem::RegisterTypes() {
     RegisterHandler("lua", &game.GetLuaSystem());
 }
 
-void util::JSONPasrser::RegisterTypes() {
+void util::JSONParser::RegisterTypes() {
     RegisterParser(game.GetGraphicsInstance());
     RegisterParser(sound::System::GetInstance());
     RegisterParser(resource::ResourceMap::GetInstance());
-    RegisterParser(ComponentFactory::GetInstance());
+}
+
+void util::JSONParser::RegisterComponentTypes() {
+    auto& shared = game.GetSharedComponent();
+    auto& system = game.GetSystemComponent();
+    auto& system_value = game.GetSystemValueComponent();
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::Collidable>(system));
+    RegisterComponentType(ComponentFactory<SHARED, Component::Velocity, bool>(shared));
+    RegisterComponentType(ComponentFactory<SHARED, Component::VelocityMax, bool>(shared));
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::ReferenceFrame, id_t>(system_value));
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::IsReferenceFrame, bool>(system_value));
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::CombinedVelocity>(system));
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::OxygenRate, float>(system_value));
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::Health, uint32_t>(system_value));
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::Movable, bool>(system_value));
+    RegisterComponentType(ComponentFactory<SHARED, Component::GraphicTransform, bool>(shared));
+    RegisterComponentType(ComponentFactory<SHARED, Component::GameTransform, bool>(shared));
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::VComputer>(system));
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::VDisplay>(system));
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::VKeyboard>(system));
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::Renderable>(system));
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::Light>(system));
+    RegisterComponentType(ComponentFactory<SYSTEM, Component::Camera>(system));
 }
 
 void resource::ResourceMap::RegisterTypes() {
