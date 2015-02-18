@@ -1,5 +1,5 @@
 [submodule "common"]
 	path = common
-	url = https://github.com/trillek-team/trillek-common.git
+url=https://github.com/adam4813/trillek-common.git
 	branch = develop
 	ignore = dirty
