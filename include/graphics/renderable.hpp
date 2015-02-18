@@ -70,7 +70,7 @@ public:
      * \param[in] const std::vector<Property>& properties The creation properties for the component.
      * \return bool True if initialization finished with no errors.
      */
-    bool Initialize(const std::vector<Property> &properties);
+    bool Initialize(const id_t entity_id, const std::vector<Property> &properties);
 private:
     std::shared_ptr<LoadStatus> loadstatus;
 

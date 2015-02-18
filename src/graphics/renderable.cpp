@@ -36,9 +36,10 @@ std::shared_ptr<Animation> Renderable::GetAnimation() const {
     return this->animation;
 }
 
-bool Renderable::Initialize(const std::vector<Property> &properties) {
+bool Renderable::Initialize(const id_t entity_id, const std::vector<Property> &properties) {
     std::string mesh_name;
     std::string animation_name;
+    this->entity_id = entity_id;
     for (const Property& p : properties) {
         std::string name = p.GetName();
         if (name == "mesh") {
@@ -52,9 +53,6 @@ bool Renderable::Initialize(const std::vector<Property> &properties) {
         }
         else if (name == "instanced_textures") {
             this->set_inst_textures = p.Get<std::vector<bool>>();
-        }
-        else if (name == "entity_id") {
-            this->entity_id = p.Get<unsigned int>();
         }
     }
 

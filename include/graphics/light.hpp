@@ -29,7 +29,7 @@ public:
      * \param[in] const std::vector<Property>& properties The creation properties for the component.
      * \return bool True if initialization finished with no errors.
      */
-    virtual bool Initialize(const std::vector<Property> &properties);
+    virtual bool Initialize(const id_t entity_id, const std::vector<Property> &properties);
 
     bool enabled;
     bool shadows;

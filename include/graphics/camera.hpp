@@ -54,7 +54,7 @@ public:
         }
     }
 
-    virtual bool Initialize(const std::vector<Property> &properties) {
+    virtual bool Initialize(const id_t entity_id, const std::vector<Property> &properties) {
         return true;
     }
 

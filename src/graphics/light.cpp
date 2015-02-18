@@ -7,7 +7,7 @@
 namespace trillek {
 namespace graphics {
 
-bool LightBase::Initialize(const std::vector<Property> &properties) {
+bool LightBase::Initialize(const id_t entity_id, const std::vector<Property> &properties) {
 
     color = glm::vec3(1,1,1);
     float radius = 200.0f;
